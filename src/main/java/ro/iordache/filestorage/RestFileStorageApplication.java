@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class RestFileStorage {
+public class RestFileStorageApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(RestFileStorage.class, args);
+    SpringApplication.run(RestFileStorageApplication.class, args);
   }
 
 }
