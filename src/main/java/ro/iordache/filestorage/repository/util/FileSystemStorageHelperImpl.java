@@ -1,6 +1,10 @@
-package ro.iordache.filestorage.rest.impl;
+package ro.iordache.filestorage.repository.util;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,8 +16,36 @@ public class FileSystemStorageHelperImpl {
     
     private static final Logger logger = LoggerFactory.getLogger(FileSystemStorageHelperImpl.class);
     
-    @Value("${filestorage.repo.folder}")
+    //@Value("${filestorage.repo.folder:storage}")
     private String storageRepositoryFolder;
+    
+    //@Value("${filestorage.repo.temp.name:temp}")
+    private String tempFolderName;
+    
+    public FileSystemStorageHelperImpl(@Value("${filestorage.repo.folder:storage}") String storageRepositoryFolder,
+            @Value("${filestorage.repo.temp.name:temp}") String tempFolderName) {
+        this.storageRepositoryFolder = storageRepositoryFolder;
+        this.tempFolderName = tempFolderName;
+        
+        Path tempFolderPath = Paths.get(tempFolderName);
+        
+        if (!Files.exists(tempFolderPath)) {
+            try {
+                Files.createDirectories(tempFolderPath);
+            } catch (IOException e) {
+                logger.error("Could not create temporary directory!", e);
+            }
+        }
+    }
+    
+    public Path getStoragePath() {
+        return Paths.get(storageRepositoryFolder);
+    }
+    
+    public Path getTempFilePath(String fileName) {
+        Path tempFilePath = Paths.get(tempFolderName, fileName);
+        return tempFilePath;
+    }
     
     /**
      * Gets the internal storage file associated with a given file name
