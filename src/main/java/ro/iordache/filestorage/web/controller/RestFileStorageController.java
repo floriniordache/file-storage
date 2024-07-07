@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+import ro.iordache.filestorage.rest.impl.DeleteFileServiceHandler;
 import ro.iordache.filestorage.rest.impl.PutFileServiceHandler;
 import ro.iordache.filestorage.rest.impl.ReadFileServiceHandler;
 
@@ -26,6 +27,9 @@ public class RestFileStorageController {
     
     @Autowired
     private PutFileServiceHandler putHandler;
+    
+    @Autowired
+    private DeleteFileServiceHandler deleteHandler;
     
     /*@PostConstruct
     public void init() {
@@ -49,6 +53,6 @@ public class RestFileStorageController {
     
     @DeleteMapping("/{fileNameWithExtension}")
     public ResponseEntity<String> deleteFile(@PathVariable String fileNameWithExtension) {
-        return ResponseEntity.ok("Deleting file " + fileNameWithExtension);
+        return deleteHandler.doAction(fileNameWithExtension, null);
     }
 }

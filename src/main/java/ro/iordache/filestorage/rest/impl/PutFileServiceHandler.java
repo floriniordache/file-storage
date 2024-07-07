@@ -16,7 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 
 /**
- * Provides File reading functionality
+ * PUT REST service handler -- provides file creating and updating functionality
  */
 @Service
 public class PutFileServiceHandler implements FileAccessServiceHandler {
@@ -43,16 +43,17 @@ public class PutFileServiceHandler implements FileAccessServiceHandler {
             if (destinationFile.exists()) {
                 URI destURI = URI.create(request.getRequestURI());
                 response = ResponseEntity.created(destURI).build();
+                logger.debug("PUT - destination file {} already exists, updating it", fileName);
             } else {
                 response = ResponseEntity.ok().build();
+                logger.debug("PUT - creating new file {}", fileName);
             }
-            logger.debug("Payload is " + request);
+            destinationFile.getParentFile().mkdirs();
             FileCopyUtils.copy(request.getInputStream(), 
                     Files.newOutputStream(Paths.get(destinationFile.getAbsolutePath())));
-            //requestBody.transferTo(destinationFile);
             return response;
         } catch (Exception e) {
-            logger.error("Error storing file in the file system!", e);
+            logger.error("PUT - Error storing file in the file system!", e);
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
