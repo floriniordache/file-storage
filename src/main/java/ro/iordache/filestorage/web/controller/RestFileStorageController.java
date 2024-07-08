@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
-import ro.iordache.filestorage.repository.FileSystemStorageIndex;
+import ro.iordache.filestorage.repository.FileSystemStorageService;
 import ro.iordache.filestorage.rest.impl.DeleteFileServiceHandler;
 import ro.iordache.filestorage.rest.impl.PutFileServiceHandler;
 import ro.iordache.filestorage.rest.impl.ReadFileServiceHandler;
@@ -37,17 +37,7 @@ public class RestFileStorageController {
     private DeleteFileServiceHandler deleteHandler;
     
     @Autowired
-    private FileSystemStorageIndex storageIndex;
-    
-    /*@PostConstruct
-    public void init() {
-        logger.info("Controller initializing...");
-        File storageRoot = new File("./" + storageRepositoryFolder);
-        if (!storageRoot.exists()) {
-            storageRoot.mkdirs();
-        }
-        logger.info("Storage folder configuration:" + storageRepositoryFolder);
-    }*/
+    private FileSystemStorageService storageService;
     
     @GetMapping("/{fileNameWithExtension}")
     public ResponseEntity getFile(@PathVariable String fileNameWithExtension) {
@@ -58,7 +48,7 @@ public class RestFileStorageController {
     public Map<String, Long> getStorageSize() {
         
         Map<String, Long> response = new HashMap<String, Long>();
-        response.put("numFiles", storageIndex.getSize());
+        response.put("numFiles", storageService.getSize());
         
         return response;
     }

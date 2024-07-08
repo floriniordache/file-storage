@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
+import ro.iordache.filestorage.repository.FileSystemStorageService;
 import ro.iordache.filestorage.repository.util.FileSystemStorageHelperImpl;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 
@@ -27,6 +28,9 @@ public class PutFileServiceHandler implements FileAccessServiceHandler {
     @Autowired
     private FileSystemStorageHelperImpl fileResolver;
     
+    @Autowired
+    private FileSystemStorageService storageService;
+    
     /**
      * Creates or updates a file in the file storage.
      * 
@@ -39,6 +43,7 @@ public class PutFileServiceHandler implements FileAccessServiceHandler {
         
         try {
             ResponseEntity response;
+            boolean createNew = false;
             
             File destinationFile = fileResolver.getStorageFile(fileName);
             if (destinationFile.exists()) {
@@ -47,11 +52,17 @@ public class PutFileServiceHandler implements FileAccessServiceHandler {
                 logger.debug("PUT - destination file {} already exists, updating it", fileName);
             } else {
                 response = ResponseEntity.ok().build();
+                createNew = true;
                 logger.debug("PUT - creating new file {}", fileName);
             }
             destinationFile.getParentFile().mkdirs();
             FileCopyUtils.copy(request.getInputStream(), 
                     Files.newOutputStream(Paths.get(destinationFile.getAbsolutePath())));
+            
+            if(createNew) {
+                storageService.incrementSize();
+            }
+            
             return response;
         } catch (Exception e) {
             logger.error("PUT - Error storing file in the file system!", e);

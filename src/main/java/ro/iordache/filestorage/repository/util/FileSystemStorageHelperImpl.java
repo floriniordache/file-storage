@@ -16,25 +16,28 @@ public class FileSystemStorageHelperImpl {
     
     private static final Logger logger = LoggerFactory.getLogger(FileSystemStorageHelperImpl.class);
     
-    //@Value("${filestorage.repo.folder:storage}")
     private String storageRepositoryFolder;
     
-    //@Value("${filestorage.repo.temp.name:temp}")
     private String tempFolderName;
     
     public FileSystemStorageHelperImpl(@Value("${filestorage.repo.folder:storage}") String storageRepositoryFolder,
             @Value("${filestorage.repo.temp.name:temp}") String tempFolderName) {
         this.storageRepositoryFolder = storageRepositoryFolder;
         this.tempFolderName = tempFolderName;
+
+        try {
+            createFolder(tempFolderName);
+            createFolder(storageRepositoryFolder);
+        } catch (IOException e) {
+            logger.error("Could not create folders!", e);
+        }
+    }
+    
+    private void createFolder(String folderPathStr) throws IOException {
+        Path folderPath = Paths.get(folderPathStr);
         
-        Path tempFolderPath = Paths.get(tempFolderName);
-        
-        if (!Files.exists(tempFolderPath)) {
-            try {
-                Files.createDirectories(tempFolderPath);
-            } catch (IOException e) {
-                logger.error("Could not create temporary directory!", e);
-            }
+        if (!Files.exists(folderPath)) {
+            Files.createDirectories(folderPath);
         }
     }
     
