@@ -7,6 +7,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -35,7 +36,7 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
     
     @PostConstruct
     public void init() {
-        scanRepo("*");
+        size.set(scanRepoSize());
     }
     
     public long getSize() {
@@ -49,34 +50,57 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
     public void decrementSize() {
         size.decrementAndGet();
     }
-    
 
     public List<String> enumerate(String pattern, long startIndex, long pageSize) {
-        // TODO Auto-generated method stub
-        return null;
+        return scanRepo(pattern, startIndex, pageSize);
     }
 
     
-    public void scanRepo(String globPattern) {
-        logger.debug("Scanning file repository for pattern {...}", globPattern);
+    private long scanRepoSize() {
+        logger.debug("Determining size of the repository...");
         
         long repoSize = 0;
         try {
-            DirectoryStream<Path> ds = Files.newDirectoryStream(storageHelper.getStoragePath(), globPattern);
+            DirectoryStream<Path> ds = Files.newDirectoryStream(storageHelper.getStoragePath(), "*");
             for (Path storedFilePath : ds) {
                 repoSize++;
             }
-
             ds.close();
             
-            size.set(repoSize);
+            logger.debug("Found total {} files in the storage!", repoSize);
+        } catch (IOException e) {
+            logger.error("Error scanning file repository for pattern!", e);
+        }
+        
+        return repoSize;
+    }
+    
+    private List<String> scanRepo(String globPattern, long startIndex, long pageSize) {
+        logger.debug("Scanning file repository for pattern {...}", globPattern);
+        List<String> results = new ArrayList<String>();
+
+        try {
+            DirectoryStream<Path> ds = Files.newDirectoryStream(storageHelper.getStoragePath(), globPattern);
+            long current = 0;
             
-            logger.debug("Found total {} files for pattern {}!", repoSize, globPattern);
+            for (Path storedFilePath : ds) {
+                if (current < startIndex) {
+                    current++;
+                    continue;
+                } else if (current >= startIndex && current < startIndex + pageSize) {
+                    results.add(storedFilePath.getFileName().toString());
+                } else {
+                    break;
+                }
+            }
+            ds.close();
         } catch (IOException e) {
             logger.error("Error scanning file repository for pattern!", e);
         }
         
         logger.debug("Scanning file repository for pattern {} finished!", globPattern);
+        
+        return results;
     }
     
     /*

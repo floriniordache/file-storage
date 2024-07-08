@@ -30,14 +30,14 @@ public class FileSystemStorageServiceImplTest {
         File f2 = storageHelper.getStorageFile("f2.txt");
         f2.createNewFile();
         f2.deleteOnExit();
+        
+        fileStorageService.init();
     }
 
     @Test
     public void testScanRepo() {
-        fileStorageService.scanRepo("*");
-        
         long indexedSize = fileStorageService.getSize();
         
-        Assert.assertEquals("Index should contain two entries!", indexedSize, 2);
+        Assert.assertEquals("Index should contain two entries!", 2, indexedSize);
     }
 }

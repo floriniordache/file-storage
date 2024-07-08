@@ -1,6 +1,7 @@
 package ro.iordache.filestorage.web.controller;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -51,6 +52,11 @@ public class RestFileStorageController {
         response.put("numFiles", storageService.getSize());
         
         return response;
+    }
+    
+    @GetMapping(path="/enum/{globPattern}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<String> getEnum(@PathVariable String globPattern) {
+        return storageService.enumerate(globPattern, 0, 1000);
     }
     
     @PutMapping("/{fileNameWithExtension}")
