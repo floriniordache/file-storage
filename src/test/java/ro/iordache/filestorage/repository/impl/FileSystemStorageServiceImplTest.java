@@ -23,6 +23,7 @@ public class FileSystemStorageServiceImplTest {
     
     @Before
     public void setUp() throws IOException {
+        
         File f1 = storageHelper.getStorageFile("f1.txt");
         f1.createNewFile();
         f1.deleteOnExit();
