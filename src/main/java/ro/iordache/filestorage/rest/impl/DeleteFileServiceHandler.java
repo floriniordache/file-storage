@@ -25,7 +25,7 @@ public class DeleteFileServiceHandler implements FileAccessServiceHandler {
      * Looks up the given file in the file storage. If the file is found, it will be deleted
      * 
      * @param fileName - The file to be deleted from the storage
-     * @param request - not used
+     * @param request - current http request
      * @return a {@link ResponseEntity} object which is either
      *      200 OK if file deletion is successful
      *      404 NOT FOUND if file is not present in the storage

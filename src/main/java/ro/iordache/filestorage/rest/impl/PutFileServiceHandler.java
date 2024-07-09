@@ -27,7 +27,7 @@ public class PutFileServiceHandler implements FileAccessServiceHandler {
      * Creates or updates a file in the file storage.
      * 
      * @param fileName - The file to be read
-     * @param request - file contents
+     * @param request - Current request containing the file contents
      * @return a {@link ResponseEntity} object depending on the outcome of the attempt to store the file
      */
     public ResponseEntity doAction(String fileName, HttpServletRequest request) {

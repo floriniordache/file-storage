@@ -15,17 +15,6 @@ public interface FileSystemStorageService {
     public long getSize();
     
     /**
-     * Returns a list of file names matching a given pattern
-     * 
-     * @param pattern - a {@link String} denoting the glob pattern to match
-     * @param startIndex - starting index in the result set
-     * @param pageSize - max number of items per page
-     * 
-     * @return a {@link List} of file names matching the pattern
-     */
-    public List<String> enumerate(String pattern, long startIndex, long pageSize);
-    
-    /**
      * Stores a file in the server's storage 
      * 
      * @param fileName - the file name
@@ -43,4 +32,26 @@ public interface FileSystemStorageService {
      * @throws IOException - on any IO issues during the operation
      */
     public boolean deleteFile(String fileName) throws IOException;
+    
+
+    /**
+     * Returns a stored file's contents as an {@link InputStream}
+     * 
+     * @param fileName - the file name
+     * @return an {@link InputStream} from the file, if the file is found to be stored in this server's storage,
+     * {@code null} otherwise
+     * @throws IOException
+     */
+    public InputStream getFileContent(String fileName) throws IOException;
+    
+    /**
+     * Returns a list of file names matching a given pattern
+     * 
+     * @param pattern - a {@link String} denoting the glob pattern to match
+     * @param startIndex - starting index in the result set
+     * @param pageSize - max number of items per page
+     * 
+     * @return a {@link List} of file names matching the pattern
+     */
+    public List<String> enumerate(String pattern, long startIndex, long pageSize);
 }

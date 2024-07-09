@@ -1,16 +1,13 @@
 package ro.iordache.filestorage.repository.impl;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,12 +15,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileCopyUtils;
 
 import jakarta.annotation.PostConstruct;
 import ro.iordache.filestorage.repository.FileSystemStorageService;
+import ro.iordache.filestorage.repository.impl.index.StorageIndex;
 import ro.iordache.filestorage.repository.util.FileSystemStorageHelperImpl;
 
 @Component
@@ -36,13 +33,17 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
     @Autowired
     private FileSystemStorageHelperImpl storageHelper;
     
+    @Autowired
+    private StorageIndex storageIndex;
+    
     public FileSystemStorageServiceImpl() {
         size = new AtomicLong();
     }
     
     @PostConstruct
     public void init() {
-        size.set(scanRepoSize());
+        long currentRepoSize = storageIndex.buildIndex(storageHelper.getStoragePath());
+        size.set(currentRepoSize);
     }
     
     public long getSize() {
@@ -88,88 +89,27 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         return true;
     }
     
-    private long scanRepoSize() {
-        logger.debug("Determining size of the repository...");
+    public InputStream getFileContent(String fileName) throws IOException {
+        logger.debug("Getting file contents for file {}", fileName);
         
-        long repoSize = 0;
-        try {
-            DirectoryStream<Path> ds = Files.newDirectoryStream(storageHelper.getStoragePath(), "*");
-            for (Path storedFilePath : ds) {
-                repoSize++;
-            }
-            ds.close();
-            
-            logger.debug("Found total {} files in the storage!", repoSize);
-        } catch (IOException e) {
-            logger.error("Error scanning file repository for pattern!", e);
+        File resolvedFileToRead = storageHelper.findFile(fileName);
+        if (resolvedFileToRead == null) {
+            logger.debug("No file found with name {}", fileName);
+            return null;
         }
         
-        return repoSize;
+        return new FileInputStream(resolvedFileToRead);
     }
     
-    private List<String> scanRepo(String globPattern, long startIndex, long pageSize) {
-        logger.debug("Scanning file repository for pattern {...}", globPattern);
-        List<String> results = new ArrayList<String>();
+    private List<String> scanRepo(String pattern, long startIndex, long pageSize) {
+        logger.debug("Scanning file repository for pattern {}", pattern);
+        long startScan = System.currentTimeMillis();
+        List<String> results = null;
 
-        try {
-            DirectoryStream<Path> ds = Files.newDirectoryStream(storageHelper.getStoragePath(), globPattern);
-            long current = 0;
-            
-            for (Path storedFilePath : ds) {
-                if (current < startIndex) {
-                    current++;
-                    continue;
-                } else if (current >= startIndex && current < startIndex + pageSize) {
-                    current++;
-                    results.add(storedFilePath.getFileName().toString());
-                } else {
-                    break;
-                }
-            }
-            ds.close();
-        } catch (IOException e) {
-            logger.error("Error scanning file repository for pattern!", e);
-        }
+        results = storageIndex.scanRepoIndex(pattern, startIndex, pageSize);
         
-        logger.debug("Scanning file repository for pattern {} finished!", globPattern);
+        logger.debug("Scanning file repository for pattern {} took {} seconds", pattern, (long)(System.currentTimeMillis() - startScan)/100);
         
         return results;
     }
-    
-    /*
-     * public void buildIndex() {
-        logger.debug("File system storage index rebuilding...");
-        
-        long repoSize = 0;
-        ByteBuffer buffer = ByteBuffer.allocate(4096);
-        
-        try {
-            DirectoryStream<Path> ds = Files.newDirectoryStream(storageHelper.getStoragePath());
-            FileChannel cachedIndexFC = FileChannel.open(storageHelper.getTempFilePath(INDEX_CACHE_FILE_NAME), 
-                    StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            
-            for (Path storedFilePath : ds) {
-                repoSize++;
-
-                buffer.put(storedFilePath.getFileName().toString().getBytes());
-                buffer.put("\n".getBytes());
-                buffer.flip();
-                
-                cachedIndexFC.write(buffer);
-                
-                buffer.clear();
-            }
-            
-            cachedIndexFC.force(false);
-            cachedIndexFC.close();
-            ds.close();
-            
-            size.set(repoSize);
-        } catch (IOException e) {
-            logger.error("Error rebuilding index!", e);
-        }
-        
-        logger.debug("File system storage index rebuild finished");
-    }
-     */
 }

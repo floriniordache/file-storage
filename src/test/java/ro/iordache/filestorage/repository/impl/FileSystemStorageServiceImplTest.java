@@ -10,6 +10,7 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import ro.iordache.filestorage.repository.impl.index.StorageIndex;
 import ro.iordache.filestorage.repository.util.FileSystemStorageHelperImpl;
 
 @RunWith(SpringRunner.class)
@@ -20,6 +21,9 @@ public class FileSystemStorageServiceImplTest {
     
     @SpyBean
     private FileSystemStorageServiceImpl fileStorageService;
+    
+    @SpyBean
+    private StorageIndex storageIndex;
     
     @Before
     public void setUp() throws IOException {
