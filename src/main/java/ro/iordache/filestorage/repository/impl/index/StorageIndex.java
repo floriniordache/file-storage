@@ -34,7 +34,7 @@ public class StorageIndex {
             DirectoryStream<Path> ds = Files.newDirectoryStream(folder);
             
             FileChannel indexFileChannel = FileChannel.open(Paths.get(STORAGE_INDEX_FILE_NAME), 
-                    StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
             ByteBuffer buf = ByteBuffer.allocate(5000 * FileInfoIndexEntry.MAX_RECORD_LENGTH);
             
             for (Path filePath : ds) {
@@ -70,6 +70,71 @@ public class StorageIndex {
         return numEntries;
     }
     
+    public void removeFromIndex(String fileName) {
+        logger.debug("Removing file {} from the index...", fileName);
+        try {
+            FileChannel indexFileChannel = FileChannel.open(Paths.get(STORAGE_INDEX_FILE_NAME), 
+                    StandardOpenOption.READ, StandardOpenOption.WRITE);
+
+            ByteBuffer buffer = ByteBuffer.allocate(5000 * FileInfoIndexEntry.MAX_RECORD_LENGTH);
+            long readBytes;
+            
+            while ((readBytes = indexFileChannel.read(buffer)) >= 0) {
+                buffer.flip();
+                
+                List<FileInfoIndexEntry> readEntries = FileInfoIndexEntry.fromByteArray(buffer);
+                
+                for (int i = 0 ; i < readEntries.size() ; i++) {
+                    FileInfoIndexEntry fileInfoIndexEntry = readEntries.get(i);
+
+                    if (fileInfoIndexEntry.getFileName().equals(fileName)) {
+                        logger.debug("Found file {} in the index storage, removing it...", fileName);
+                        
+                        // need to remove this entry from the index file
+                        long currentFileCursorPos = indexFileChannel.position();
+                        
+                        // we need to "erase" the entry at the right position in the file
+                        long updatePosition = currentFileCursorPos - (readEntries.size() - i)*FileInfoIndexEntry.MAX_RECORD_LENGTH;
+                        
+                        // update file channel position
+                        indexFileChannel.position(updatePosition);
+                        
+                        // overwrite the area for the filename that needs to be removed
+                        ByteBuffer whiteSpaces = ByteBuffer.wrap(new FileInfoIndexEntry("").getBytes());
+                        indexFileChannel.write(whiteSpaces);
+                        
+                        indexFileChannel.force(false);
+                        indexFileChannel.close();
+                        
+                        logger.debug("Removing file {} from index done!", fileName);
+                        
+                        return;
+                        
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error removing file from index!", e);
+        }
+    }
+    
+    public void addToIndex(String fileName) {
+        logger.debug("Adding file {} to the index...", fileName);
+        try {
+            FileChannel indexFileChannel = FileChannel.open(Paths.get(STORAGE_INDEX_FILE_NAME), 
+                    StandardOpenOption.APPEND, StandardOpenOption.WRITE);
+
+            ByteBuffer addedFile = ByteBuffer.wrap(new FileInfoIndexEntry(fileName).getBytes());
+            indexFileChannel.write(addedFile);
+            
+            indexFileChannel.force(false);
+            indexFileChannel.close();
+            logger.debug("Adding file {} to the index successful!", fileName);
+        } catch (Exception e) {
+            logger.error("Error adding file to index!", e);
+        }
+    }
+    
     public List<String> scanRepoIndex(String pattern, long startIdx, long pageSize) {
         List<String> hits = new ArrayList<String>();        
         FileChannel indexFileChannel = null;
@@ -85,7 +150,7 @@ public class StorageIndex {
             long skipRecords = startIdx;
             while ((readBytes = indexFileChannel.read(buffer)) >= 0) {
                 buffer.flip();
-                List<FileInfoIndexEntry> readEntries = FileInfoIndexEntry.fromByteArray(buffer.array());
+                List<FileInfoIndexEntry> readEntries = FileInfoIndexEntry.fromByteArray(buffer);
                 
                 for (FileInfoIndexEntry fileInfoIndexEntry : readEntries) {
                     Matcher regexMatcher = regexPattern.matcher(fileInfoIndexEntry.getFileName());

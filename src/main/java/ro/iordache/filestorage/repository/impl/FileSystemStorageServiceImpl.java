@@ -4,11 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -66,7 +63,11 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
                 Files.newOutputStream(Paths.get(destinationFile.getAbsolutePath())));
         
         if(isNew) {
+            // increment repo size
             size.incrementAndGet();
+            
+            // update index, add new file
+            storageIndex.addToIndex(fileName);
         }
         
         return isNew;
@@ -85,7 +86,9 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         
         logger.debug("[DELETE] Deleting {} successful", fileName);
         
+        // update the store size and index
         size.decrementAndGet();
+        storageIndex.removeFromIndex(fileName);
         return true;
     }
     

@@ -1,5 +1,6 @@
 package ro.iordache.filestorage.repository.impl.index;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,14 +45,15 @@ public class FileInfoIndexEntry {
     public byte[] getBytes() {
         return this.bytes;
     }
-    
-    public static List<FileInfoIndexEntry> fromByteArray(byte[] bytes) {
+
+    public static List<FileInfoIndexEntry> fromByteArray(ByteBuffer byteBuf) {
         
         List<FileInfoIndexEntry> resList = new ArrayList<FileInfoIndexEntry>();
+        byte[] bytes = byteBuf.array();
         
         int position = 0;
         
-        while (position < bytes.length) {
+        while (position < byteBuf.limit()) {
             byte[] fileEntryBytes = Arrays.copyOfRange(bytes, position, position + MAX_RECORD_LENGTH);
             
             FileInfoIndexEntry entry = new FileInfoIndexEntry(fileEntryBytes);
