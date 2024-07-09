@@ -1,11 +1,10 @@
 package ro.iordache.filestorage.repository.impl;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -52,15 +51,21 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
     }
 
     public boolean storeFile(String fileName, InputStream contentsInputStream) throws IOException {
-        File destinationFile = storageHelper.getStorageFile(fileName);
+        Path destinationFile = storageHelper.getStorageFile(fileName);
         boolean isNew = false;
         logger.debug("Storing file {} in the internal storage", fileName);
-        if (!destinationFile.exists()) {
+        if (!Files.exists(destinationFile)) {
             isNew = true;
         }
-        destinationFile.getParentFile().mkdirs();
+        
+
+        // store a temp file with the contents
+        Path tmpFile = Files.createTempFile(storageHelper.getTempStoragePath(), null, ".tmp");
         FileCopyUtils.copy(contentsInputStream, 
-                Files.newOutputStream(Paths.get(destinationFile.getAbsolutePath())));
+                Files.newOutputStream(tmpFile));
+        
+        //atomically move the temporary file at it's right location in the storage
+        Files.move(tmpFile, destinationFile, StandardCopyOption.ATOMIC_MOVE);
         
         if(isNew) {
             // increment repo size
@@ -75,14 +80,14 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
     
     public boolean deleteFile(String fileName) throws IOException {
         logger.debug("Deleting file {} from the internal storage");
-        File resolvedFileToDelete = storageHelper.findFile(fileName);
+        Path resolvedFileToDelete = storageHelper.findFile(fileName);
         
         if (resolvedFileToDelete == null) {
             logger.debug("[DELETE] No file found with name {}", fileName);
             return false;
         }
         
-        Files.delete(Paths.get(resolvedFileToDelete.getAbsolutePath()));
+        Files.delete(resolvedFileToDelete);
         
         logger.debug("[DELETE] Deleting {} successful", fileName);
         
@@ -95,13 +100,13 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
     public InputStream getFileContent(String fileName) throws IOException {
         logger.debug("Getting file contents for file {}", fileName);
         
-        File resolvedFileToRead = storageHelper.findFile(fileName);
+        Path resolvedFileToRead = storageHelper.findFile(fileName);
         if (resolvedFileToRead == null) {
             logger.debug("No file found with name {}", fileName);
             return null;
         }
         
-        return new FileInputStream(resolvedFileToRead);
+        return Files.newInputStream(resolvedFileToRead);
     }
     
     private List<String> scanRepo(String pattern, long startIndex, long pageSize) {

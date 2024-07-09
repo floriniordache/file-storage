@@ -1,6 +1,5 @@
 package ro.iordache.filestorage.repository.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,19 +44,18 @@ public class FileSystemStorageHelperImpl {
         return Paths.get(storageRepositoryFolder);
     }
     
-    public Path getTempFilePath(String fileName) {
-        Path tempFilePath = Paths.get(tempFolderName, fileName);
-        return tempFilePath;
+    public Path getTempStoragePath() {
+        return Paths.get(tempFolderName);
     }
     
     /**
      * Gets the internal storage file associated with a given file name
      * 
      * @param fileName - name of the file looked up in the storage
-     * @return a {@link File} object in the internal storage repository
+     * @return a {@link Path} object in the internal storage repository
      */
-    public File getStorageFile(String fileName) {
-        File resolvedFile = new File(storageRepositoryFolder, fileName);
+    public Path getStorageFile(String fileName) {
+        Path resolvedFile = Paths.get(storageRepositoryFolder, fileName);
         
         return resolvedFile;
     }
@@ -66,14 +64,14 @@ public class FileSystemStorageHelperImpl {
      * Attempts to resolve a file in the storage with a given file name
      * 
      * @param fileName the name of the file we want in the storage
-     * @return an actual {@link File} in this storage's repository folder, if found, null otherwise
+     * @return an actual {@link Path} in this storage's repository folder, if found, null otherwise
      */
-    public File findFile(String fileName) {
+    public Path findFile(String fileName) {
         
         logger.debug("Trying to resolve a file with name {} in the storage folder {}", fileName, storageRepositoryFolder);
-        File resolvedFile = getStorageFile(fileName);
+        Path resolvedFile = getStorageFile(fileName);
         
-        if (!resolvedFile.exists() || resolvedFile.isDirectory()) {
+        if (!Files.exists(resolvedFile) || Files.isDirectory(resolvedFile)) {
             logger.debug("No file found with name {} in the storage folder {}", fileName, storageRepositoryFolder);
             return null;
         }

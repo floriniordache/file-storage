@@ -2,7 +2,10 @@ package ro.iordache.filestorage.repository.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,15 +31,22 @@ public class FileSystemStorageServiceImplTest {
     @Before
     public void setUp() throws IOException {
         
-        File f1 = storageHelper.getStorageFile("f1.txt");
-        f1.createNewFile();
-        f1.deleteOnExit();
+        Path f1 = storageHelper.getStorageFile("f1.txt");
+        Files.createFile(f1);
         
-        File f2 = storageHelper.getStorageFile("f2.txt");
-        f2.createNewFile();
-        f2.deleteOnExit();
+        Path f2 = storageHelper.getStorageFile("f2.txt");
+        Files.createFile(f2);
         
         fileStorageService.init();
+    }
+    
+    @After
+    public void cleanUp() throws IOException {
+        Path f1 = storageHelper.getStorageFile("f1.txt");
+        Files.deleteIfExists(f1);
+        
+        Path f2 = storageHelper.getStorageFile("f2.txt");
+        Files.deleteIfExists(f2);
     }
 
     @Test
