@@ -10,8 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import jakarta.servlet.http.HttpServletRequest;
 import ro.iordache.filestorage.repository.FileSystemStorageService;
+import ro.iordache.filestorage.rest.FileAccessRequest;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 
 /**
@@ -30,15 +30,14 @@ public class ReadFileServiceHandler implements FileAccessServiceHandler {
      * If the file is found, it will be returned as part of the method's ResponseEntity response
      * Otherwise, the method will return the appropriate error response
      * 
-     * @param fileName - The file to be read
-     * @param request - not used
+     * fileAccessRequest - the {@link FileAccessRequest} for the file to be deleted
      * @return a {@link ResponseEntity} object
      */
-    public ResponseEntity doAction(String fileName, HttpServletRequest request) {
-        logger.debug("Handling READ request for file {}", fileName);
+    public ResponseEntity doAction(FileAccessRequest fileAccessRequest) {
+        logger.debug("Handling READ request for file {}", fileAccessRequest.getFileName());
         
         try {
-            InputStream foundFileIS = storageService.getFileContent(fileName);
+            InputStream foundFileIS = storageService.getFileContent(fileAccessRequest.getFileName());
             if (foundFileIS == null) {
                 return ResponseEntity.notFound().build();
             }

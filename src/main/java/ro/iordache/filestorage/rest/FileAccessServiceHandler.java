@@ -8,13 +8,11 @@ import jakarta.servlet.http.HttpServletRequest;
  * Interface for a generic file access operation
  */
 public interface FileAccessServiceHandler {
-    
     /**
      * Performs an action on a file
      * 
-     * @param fileName - The file on which we need to perform the action
-     * @param request - The request body
+     * @param fileAccessRequest - a {@link FileAccessRequest} containing the required file details
      * @return a {@link ResponseEntity} object
      */
-    public ResponseEntity doAction(String fileName, HttpServletRequest request);
+    public ResponseEntity doAction(FileAccessRequest fileAccessRequest);
 }

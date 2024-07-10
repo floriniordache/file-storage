@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import jakarta.servlet.http.HttpServletRequest;
 import ro.iordache.filestorage.repository.FileSystemStorageService;
+import ro.iordache.filestorage.rest.FileAccessRequest;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 
 /**
@@ -24,18 +24,17 @@ public class DeleteFileServiceHandler implements FileAccessServiceHandler {
     /**
      * Looks up the given file in the file storage. If the file is found, it will be deleted
      * 
-     * @param fileName - The file to be deleted from the storage
-     * @param request - current http request
+     * @param fileAccessRequest - The {@link FileAccessRequest} object with details on the file to be deleted from the storage
      * @return a {@link ResponseEntity} object which is either
      *      200 OK if file deletion is successful
      *      404 NOT FOUND if file is not present in the storage
      *      500 INTERNAL SERVER ERROR on any other error
      */
-    public ResponseEntity doAction(String fileName, HttpServletRequest request) {
-        logger.debug("Handling DELETE request for file {}", fileName);
+    public ResponseEntity doAction(FileAccessRequest fileAccessRequest) {
+        logger.debug("Handling DELETE request for file {}", fileAccessRequest.getFileName());
         
         try {
-            boolean deleteSuccess = storageService.deleteFile(fileName);
+            boolean deleteSuccess = storageService.deleteFile(fileAccessRequest.getFileName());
             
             if (!deleteSuccess) {
                 return ResponseEntity.notFound().build();

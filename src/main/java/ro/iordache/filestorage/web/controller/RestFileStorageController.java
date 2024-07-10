@@ -3,6 +3,7 @@ package ro.iordache.filestorage.web.controller;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
 import ro.iordache.filestorage.repository.FileSystemStorageService;
+import ro.iordache.filestorage.rest.FileAccessRequest;
+import ro.iordache.filestorage.rest.ValidationHelper;
+import ro.iordache.filestorage.rest.ValidationHelper.FileNameFormatException;
 import ro.iordache.filestorage.rest.impl.DeleteFileServiceHandler;
 import ro.iordache.filestorage.rest.impl.PutFileServiceHandler;
 import ro.iordache.filestorage.rest.impl.ReadFileServiceHandler;
@@ -26,6 +30,8 @@ import ro.iordache.filestorage.rest.impl.ReadFileServiceHandler;
 @RestController
 @RequestMapping("/api/v1/files")
 public class RestFileStorageController {
+    
+    public static final Pattern ALLOWED_FILENAME_FORMAT_PATTERN = Pattern.compile("[a-zA-Z0-9_\\-][a-zA-Z0-9_\\-\\.]{0,63}");
     
     private static final Logger logger = LoggerFactory.getLogger(RestFileStorageController.class);
     
@@ -42,10 +48,42 @@ public class RestFileStorageController {
     private FileSystemStorageService storageService;
     
     @GetMapping("/{fileNameWithExtension}")
-    public ResponseEntity getFile(@PathVariable String fileNameWithExtension) {
-        return readHandler.doAction(fileNameWithExtension, null);
+    public ResponseEntity getFile(@PathVariable String fileNameWithExtension, HttpServletRequest request) {
+        try {
+            FileAccessRequest fileAccessRequest = ValidationHelper.validateRequest(fileNameWithExtension, request);
+            return readHandler.doAction(fileAccessRequest);
+        } catch (FileNameFormatException fnfe) {
+            return ResponseEntity.badRequest().body(fnfe.getMessage());
+        } catch (Exception e) { 
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
+    @PutMapping("/{fileNameWithExtension}")
+    public ResponseEntity<String> putFile(@PathVariable String fileNameWithExtension, HttpServletRequest request) {
+        try {
+            FileAccessRequest fileAccessRequest = ValidationHelper.validateRequest(fileNameWithExtension, request);
+            return putHandler.doAction(fileAccessRequest);
+        } catch (FileNameFormatException fnfe) {
+            return ResponseEntity.badRequest().body(fnfe.getMessage());
+        } catch (Exception e) { 
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+    
+    @DeleteMapping("/{fileNameWithExtension}")
+    public ResponseEntity deleteFile(@PathVariable String fileNameWithExtension, HttpServletRequest request) {
+        try {
+            FileAccessRequest fileAccessRequest = ValidationHelper.validateRequest(fileNameWithExtension, request);
+            return deleteHandler.doAction(fileAccessRequest);
+        } catch (FileNameFormatException fnfe) {
+            return ResponseEntity.badRequest().body(fnfe.getMessage());
+        } catch (Exception e) { 
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+        
+    }
+    
     @GetMapping(path="/size", produces = MediaType.APPLICATION_JSON_VALUE)
     public Map<String, Long> getStorageSize() {
         
@@ -59,15 +97,5 @@ public class RestFileStorageController {
     public List<String> getEnum(@PathVariable String globPattern, 
             @RequestParam(defaultValue = "0") long startIndex, @RequestParam(defaultValue="1000") long pageSize) {
         return storageService.enumerate(globPattern, startIndex, pageSize);
-    }
-    
-    @PutMapping("/{fileNameWithExtension}")
-    public ResponseEntity<String> putFile(@PathVariable String fileNameWithExtension, HttpServletRequest request) {
-        return putHandler.doAction(fileNameWithExtension, request);
-    }
-    
-    @DeleteMapping("/{fileNameWithExtension}")
-    public ResponseEntity deleteFile(@PathVariable String fileNameWithExtension) {
-        return deleteHandler.doAction(fileNameWithExtension, null);
     }
 }

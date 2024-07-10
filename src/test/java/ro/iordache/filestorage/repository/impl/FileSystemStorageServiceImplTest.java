@@ -1,13 +1,11 @@
 package ro.iordache.filestorage.repository.impl;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -28,18 +26,6 @@ public class FileSystemStorageServiceImplTest {
     @SpyBean
     private StorageIndex storageIndex;
     
-    @Before
-    public void setUp() throws IOException {
-        
-        Path f1 = storageHelper.getStorageFile("f1.txt");
-        Files.createFile(f1);
-        
-        Path f2 = storageHelper.getStorageFile("f2.txt");
-        Files.createFile(f2);
-        
-        fileStorageService.init();
-    }
-    
     @After
     public void cleanUp() throws IOException {
         Path f1 = storageHelper.getStorageFile("f1.txt");
@@ -50,9 +36,21 @@ public class FileSystemStorageServiceImplTest {
     }
 
     @Test
-    public void testScanRepo() {
-        long indexedSize = fileStorageService.getSize();
+    public void testScanRepo() throws IOException {
+        fileStorageService.init();
+        long currentSize = fileStorageService.getSize();
         
-        Assert.assertEquals("Index should contain two entries!", 2, indexedSize);
+        // create 2 new files
+        Path f1 = storageHelper.getStorageFile("f1.txt");
+        Files.createFile(f1);
+        
+        Path f2 = storageHelper.getStorageFile("f2.txt");
+        Files.createFile(f2);
+        
+        // reindex repository
+        fileStorageService.init();
+        long newIndexedSize = fileStorageService.getSize();
+        
+        Assert.assertEquals("Index should contain two new entries!", currentSize + 2, newIndexedSize);
     }
 }
