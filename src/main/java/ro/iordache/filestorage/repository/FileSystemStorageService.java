@@ -20,9 +20,8 @@ public interface FileSystemStorageService {
      * @param fileName - the file name
      * @param contentsInputStream - an {@link InputStream} with the file's contents
      * @return - true if this is a new file or false otherwise
-     * @throws IOException - on any IO issues while creating or updating the file
      */
-    public boolean storeFile(String fileName, InputStream contentsInputStream) throws IOException;
+    public boolean storeFile(String fileName, InputStream contentsInputStream);
     
     /**
      * Deletes a file from the server's storage

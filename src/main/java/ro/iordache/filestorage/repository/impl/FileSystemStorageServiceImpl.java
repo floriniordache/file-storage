@@ -2,6 +2,7 @@ package ro.iordache.filestorage.repository.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -50,7 +51,7 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         return scanRepo(pattern, startIndex, pageSize);
     }
 
-    public boolean storeFile(String fileName, InputStream contentsInputStream) throws IOException {
+    public boolean storeFile(String fileName, InputStream contentsInputStream) {
         Path destinationFile = storageHelper.getStorageFile(fileName);
         boolean isNew = false;
         logger.debug("Storing file {} in the internal storage", fileName);
@@ -60,12 +61,27 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         
 
         // store a temp file with the contents
-        Path tmpFile = Files.createTempFile(storageHelper.getTempStoragePath(), null, ".tmp");
-        FileCopyUtils.copy(contentsInputStream, 
-                Files.newOutputStream(tmpFile));
-        
-        //atomically move the temporary file at it's right location in the storage
-        Files.move(tmpFile, destinationFile, StandardCopyOption.ATOMIC_MOVE);
+        Path tmpFile = null;
+        try {
+            tmpFile = Files.createTempFile(storageHelper.getTempStoragePath(), null, ".tmp");
+            
+            FileCopyUtils.copy(contentsInputStream, 
+                    Files.newOutputStream(tmpFile));
+            
+            //atomically move the temporary file at it's right location in the storage
+            Files.move(tmpFile, destinationFile, StandardCopyOption.ATOMIC_MOVE);
+        } catch (Exception e) {
+            logger.error("Something went wrong while transferring the content input stream to destination file!", e);
+            
+            // cleanup the temp file if it's already there
+            if (tmpFile != null && Files.exists(tmpFile)) {
+                try {
+                    Files.delete(tmpFile);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        }
         
         if(isNew) {
             // increment repo size

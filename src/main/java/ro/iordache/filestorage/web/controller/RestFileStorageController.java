@@ -55,6 +55,7 @@ public class RestFileStorageController {
         } catch (FileNameFormatException fnfe) {
             return ResponseEntity.badRequest().body(fnfe.getMessage());
         } catch (Exception e) { 
+            logger.error("GET File error!", e);
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
@@ -66,7 +67,8 @@ public class RestFileStorageController {
             return putHandler.doAction(fileAccessRequest);
         } catch (FileNameFormatException fnfe) {
             return ResponseEntity.badRequest().body(fnfe.getMessage());
-        } catch (Exception e) { 
+        } catch (Exception e) {
+            logger.error("PUT File error!", e);
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
@@ -79,6 +81,7 @@ public class RestFileStorageController {
         } catch (FileNameFormatException fnfe) {
             return ResponseEntity.badRequest().body(fnfe.getMessage());
         } catch (Exception e) { 
+            logger.error("DELETE File error!", e);
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
         
