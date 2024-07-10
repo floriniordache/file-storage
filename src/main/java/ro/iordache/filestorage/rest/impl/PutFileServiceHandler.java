@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import ro.iordache.filestorage.repository.FileSystemStorageService;
+import ro.iordache.filestorage.rest.FileAccessOperation;
 import ro.iordache.filestorage.rest.FileAccessRequest;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 
@@ -22,6 +23,10 @@ public class PutFileServiceHandler implements FileAccessServiceHandler {
     
     @Autowired
     private FileSystemStorageService storageService;
+    
+    public FileAccessOperation getOperationType() {
+        return FileAccessOperation.CREATE_UPDATE;
+    }
     
     /**
      * Creates or updates a file in the file storage.

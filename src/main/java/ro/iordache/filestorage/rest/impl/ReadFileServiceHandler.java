@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import ro.iordache.filestorage.repository.FileSystemStorageService;
+import ro.iordache.filestorage.rest.FileAccessOperation;
 import ro.iordache.filestorage.rest.FileAccessRequest;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 
@@ -24,6 +25,10 @@ public class ReadFileServiceHandler implements FileAccessServiceHandler {
     
     @Autowired
     private FileSystemStorageService storageService;
+    
+    public FileAccessOperation getOperationType() {
+        return FileAccessOperation.READ;
+    }
     
     /**
      * Looks up the given file in the file storage.

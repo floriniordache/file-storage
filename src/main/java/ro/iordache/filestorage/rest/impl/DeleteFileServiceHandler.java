@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import ro.iordache.filestorage.repository.FileSystemStorageService;
+import ro.iordache.filestorage.rest.FileAccessOperation;
 import ro.iordache.filestorage.rest.FileAccessRequest;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 
@@ -20,6 +21,10 @@ public class DeleteFileServiceHandler implements FileAccessServiceHandler {
     
     @Autowired
     private FileSystemStorageService storageService;
+    
+    public FileAccessOperation getOperationType() {
+        return FileAccessOperation.DELETE;
+    }
     
     /**
      * Looks up the given file in the file storage. If the file is found, it will be deleted
