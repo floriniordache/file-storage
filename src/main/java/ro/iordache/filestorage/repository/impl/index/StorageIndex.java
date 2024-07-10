@@ -10,6 +10,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,6 +27,54 @@ public class StorageIndex {
     private static final Logger logger = LoggerFactory.getLogger(StorageIndex.class);
     
     public static final String STORAGE_INDEX_FILE_NAME = "storage.index";
+    
+    /**
+     * queue to batch newly added file updates to the index
+     */
+    private BlockingQueue<String> newFilesBlockingQueue;
+    
+    public StorageIndex() {
+        newFilesBlockingQueue = new ArrayBlockingQueue<String>(1000);
+        
+        (new Thread(new Runnable(){
+            public void run(){
+                try {
+                    String fileName;
+                    while((fileName = newFilesBlockingQueue.take()) != null) {
+                        List<String> allNewFiles = new ArrayList<String>();
+                        newFilesBlockingQueue.drainTo(allNewFiles);
+                        allNewFiles.add(fileName);
+                        
+                        logger.debug("Batch adding {} files to the index...", allNewFiles.size());
+                        try {
+                            FileChannel indexFileChannel = FileChannel.open(Paths.get(STORAGE_INDEX_FILE_NAME), 
+                                    StandardOpenOption.APPEND, StandardOpenOption.WRITE);
+                            
+                            ByteBuffer buf = ByteBuffer.allocate(allNewFiles.size() * FileInfoIndexEntry.MAX_RECORD_LENGTH);
+
+                            for (String newFileName : allNewFiles) {
+                                FileInfoIndexEntry indexEntry = new FileInfoIndexEntry(newFileName);
+                                byte[] indexEntryBytes = indexEntry.getBytes();
+                                buf.put(indexEntryBytes);
+                            }
+                            
+                            buf.flip();
+                            indexFileChannel.write(buf);
+                            indexFileChannel.force(false);
+                            indexFileChannel.close();
+                            logger.debug("Batch adding {} files to the index successful!", allNewFiles.size());
+                        } catch (Exception e) {
+                            logger.error("Error batch updating index!", e);
+                        }
+                        
+                    }
+                } catch (Exception e) {
+                    logger.error("Async batching updates to index storage failed!", e);
+                }
+
+            }
+         })).start();
+    }
     
     public long buildIndex(Path folder) {
         logger.debug("Building storage index file");
@@ -119,20 +169,9 @@ public class StorageIndex {
     }
     
     public void addToIndex(String fileName) {
-        logger.debug("Adding file {} to the index...", fileName);
-        try {
-            FileChannel indexFileChannel = FileChannel.open(Paths.get(STORAGE_INDEX_FILE_NAME), 
-                    StandardOpenOption.APPEND, StandardOpenOption.WRITE);
-
-            ByteBuffer addedFile = ByteBuffer.wrap(new FileInfoIndexEntry(fileName).getBytes());
-            indexFileChannel.write(addedFile);
-            
-            indexFileChannel.force(false);
-            indexFileChannel.close();
-            logger.debug("Adding file {} to the index successful!", fileName);
-        } catch (Exception e) {
-            logger.error("Error adding file to index!", e);
-        }
+        
+        // queue the file name to be (eventually) written to the index
+        newFilesBlockingQueue.add(fileName);
     }
     
     public List<String> scanRepoIndex(Pattern regexPattern, long startIdx, long pageSize) {
