@@ -95,7 +95,7 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
     }
     
     public boolean deleteFile(String fileName) throws IOException {
-        logger.debug("Deleting file {} from the internal storage");
+        logger.debug("Deleting file {} from the internal storage", fileName);
         Path resolvedFileToDelete = storageHelper.findFile(fileName);
         
         if (resolvedFileToDelete == null) {

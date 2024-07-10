@@ -10,8 +10,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,47 +33,21 @@ public class StorageIndex {
      */
     private BlockingQueue<String> newFilesBlockingQueue;
     
+    
+    /**
+     * Queue to batch removed files to the index file
+     */
+    private BlockingQueue<String> deletedFilesBlockingQueue;
+    
     public StorageIndex() {
-        newFilesBlockingQueue = new ArrayBlockingQueue<String>(1000);
+        newFilesBlockingQueue = new LinkedBlockingQueue<String>();
+        deletedFilesBlockingQueue = new LinkedBlockingQueue<String>();
         
-        (new Thread(new Runnable(){
-            public void run(){
-                try {
-                    String fileName;
-                    while((fileName = newFilesBlockingQueue.take()) != null) {
-                        List<String> allNewFiles = new ArrayList<String>();
-                        newFilesBlockingQueue.drainTo(allNewFiles);
-                        allNewFiles.add(fileName);
-                        
-                        logger.debug("Batch adding {} files to the index...", allNewFiles.size());
-                        try {
-                            FileChannel indexFileChannel = FileChannel.open(Paths.get(STORAGE_INDEX_FILE_NAME), 
-                                    StandardOpenOption.APPEND, StandardOpenOption.WRITE);
-                            
-                            ByteBuffer buf = ByteBuffer.allocate(allNewFiles.size() * FileInfoIndexEntry.MAX_RECORD_LENGTH);
-
-                            for (String newFileName : allNewFiles) {
-                                FileInfoIndexEntry indexEntry = new FileInfoIndexEntry(newFileName);
-                                byte[] indexEntryBytes = indexEntry.getBytes();
-                                buf.put(indexEntryBytes);
-                            }
-                            
-                            buf.flip();
-                            indexFileChannel.write(buf);
-                            indexFileChannel.force(false);
-                            indexFileChannel.close();
-                            logger.debug("Batch adding {} files to the index successful!", allNewFiles.size());
-                        } catch (Exception e) {
-                            logger.error("Error batch updating index!", e);
-                        }
-                        
-                    }
-                } catch (Exception e) {
-                    logger.error("Async batching updates to index storage failed!", e);
-                }
-
-            }
-         })).start();
+        logger.debug("Starting thread process to batch update new files to the index...");
+        (new BatchNewFilesIndexUpdaterThread(newFilesBlockingQueue, STORAGE_INDEX_FILE_NAME)).start();
+        
+        logger.debug("Starting thread process to batch update deleted files to the index...");
+        (new BatchDeletedFilesIndexUpdaterThread(deletedFilesBlockingQueue, STORAGE_INDEX_FILE_NAME)).start();
     }
     
     public long buildIndex(Path folder) {
@@ -121,55 +95,11 @@ public class StorageIndex {
     }
     
     public void removeFromIndex(String fileName) {
-        logger.debug("Removing file {} from the index...", fileName);
-        try {
-            FileChannel indexFileChannel = FileChannel.open(Paths.get(STORAGE_INDEX_FILE_NAME), 
-                    StandardOpenOption.READ, StandardOpenOption.WRITE);
-
-            ByteBuffer buffer = ByteBuffer.allocate(5000 * FileInfoIndexEntry.MAX_RECORD_LENGTH);
-            long readBytes;
-            
-            while ((readBytes = indexFileChannel.read(buffer)) >= 0) {
-                buffer.flip();
-                
-                List<FileInfoIndexEntry> readEntries = FileInfoIndexEntry.fromByteArray(buffer);
-                
-                for (int i = 0 ; i < readEntries.size() ; i++) {
-                    FileInfoIndexEntry fileInfoIndexEntry = readEntries.get(i);
-
-                    if (fileInfoIndexEntry.getFileName().equals(fileName)) {
-                        logger.debug("Found file {} in the index storage, removing it...", fileName);
-                        
-                        // need to remove this entry from the index file
-                        long currentFileCursorPos = indexFileChannel.position();
-                        
-                        // we need to "erase" the entry at the right position in the file
-                        long updatePosition = currentFileCursorPos - (readEntries.size() - i)*FileInfoIndexEntry.MAX_RECORD_LENGTH;
-                        
-                        // update file channel position
-                        indexFileChannel.position(updatePosition);
-                        
-                        // overwrite the area for the filename that needs to be removed
-                        ByteBuffer whiteSpaces = ByteBuffer.wrap(new FileInfoIndexEntry("").getBytes());
-                        indexFileChannel.write(whiteSpaces);
-                        
-                        indexFileChannel.force(false);
-                        indexFileChannel.close();
-                        
-                        logger.debug("Removing file {} from index done!", fileName);
-                        
-                        return;
-                        
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Error removing file from index!", e);
-        }
+        // queue the filename to be (eventually) erased from the index
+        deletedFilesBlockingQueue.add(fileName);
     }
     
     public void addToIndex(String fileName) {
-        
         // queue the file name to be (eventually) written to the index
         newFilesBlockingQueue.add(fileName);
     }
@@ -190,6 +120,11 @@ public class StorageIndex {
                 List<FileInfoIndexEntry> readEntries = FileInfoIndexEntry.fromByteArray(buffer);
                 
                 for (FileInfoIndexEntry fileInfoIndexEntry : readEntries) {
+                    
+                    if (fileInfoIndexEntry.getFileName().isEmpty()) {
+                        continue;
+                    }
+                    
                     Matcher regexMatcher = regexPattern.matcher(fileInfoIndexEntry.getFileName());
                     if (regexMatcher.matches()) {
                         if (skipRecords > 0) {
