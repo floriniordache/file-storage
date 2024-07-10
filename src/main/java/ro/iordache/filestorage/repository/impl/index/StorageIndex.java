@@ -135,13 +135,11 @@ public class StorageIndex {
         }
     }
     
-    public List<String> scanRepoIndex(String pattern, long startIdx, long pageSize) {
-        List<String> hits = new ArrayList<String>();        
+    public List<String> scanRepoIndex(Pattern regexPattern, long startIdx, long pageSize) {
+        List<String> hits = new ArrayList<String>();
         FileChannel indexFileChannel = null;
         
         try {
-            Pattern regexPattern = Pattern.compile(pattern); 
-            
             indexFileChannel = FileChannel.open(Paths.get(STORAGE_INDEX_FILE_NAME), StandardOpenOption.READ);
             
             ByteBuffer buffer = ByteBuffer.allocate(5000 * FileInfoIndexEntry.MAX_RECORD_LENGTH);

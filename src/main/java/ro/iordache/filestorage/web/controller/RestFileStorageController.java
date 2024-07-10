@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,15 +27,10 @@ import ro.iordache.filestorage.rest.FileAccessRequest;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 import ro.iordache.filestorage.rest.ValidationHelper;
 import ro.iordache.filestorage.rest.ValidationHelper.FileNameFormatException;
-import ro.iordache.filestorage.rest.impl.DeleteFileServiceHandler;
-import ro.iordache.filestorage.rest.impl.PutFileServiceHandler;
-import ro.iordache.filestorage.rest.impl.ReadFileServiceHandler;
 
 @RestController
 @RequestMapping("/api/v1/files")
 public class RestFileStorageController {
-    
-    public static final Pattern ALLOWED_FILENAME_FORMAT_PATTERN = Pattern.compile("[a-zA-Z0-9_\\-][a-zA-Z0-9_\\-\\.]{0,63}");
     
     private static final Logger logger = LoggerFactory.getLogger(RestFileStorageController.class);
     
@@ -94,9 +90,16 @@ public class RestFileStorageController {
         return response;
     }
     
-    @GetMapping(path="/enum/{globPattern}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<String> getEnum(@PathVariable String globPattern, 
+    @GetMapping(path="/enum/{regex}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getEnum(@PathVariable String regex, 
             @RequestParam(defaultValue = "0") long startIndex, @RequestParam(defaultValue="1000") long pageSize) {
-        return storageService.enumerate(globPattern, startIndex, pageSize);
+        try {
+            Pattern regexPattern = Pattern.compile(regex);
+            
+            return ResponseEntity.ok(storageService.enumerate(regexPattern, startIndex, pageSize));
+        } catch (PatternSyntaxException pse) {
+            return ResponseEntity.badRequest().body("Invalid regular expression pattern!");
+        }
+
     }
 }

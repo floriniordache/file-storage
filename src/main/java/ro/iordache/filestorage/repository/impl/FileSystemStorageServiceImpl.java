@@ -2,12 +2,12 @@ package ro.iordache.filestorage.repository.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +47,8 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         return size.get();
     }
 
-    public List<String> enumerate(String pattern, long startIndex, long pageSize) {
-        return scanRepo(pattern, startIndex, pageSize);
+    public List<String> enumerate(Pattern regexPattern, long startIndex, long pageSize) {
+        return scanRepo(regexPattern, startIndex, pageSize);
     }
 
     public boolean storeFile(String fileName, InputStream contentsInputStream) {
@@ -125,14 +125,14 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         return Files.newInputStream(resolvedFileToRead);
     }
     
-    private List<String> scanRepo(String pattern, long startIndex, long pageSize) {
-        logger.debug("Scanning file repository for pattern {}", pattern);
+    private List<String> scanRepo(Pattern regexPattern, long startIndex, long pageSize) {
+        logger.debug("Scanning file repository for pattern {}", regexPattern.toString());
         long startScan = System.currentTimeMillis();
         List<String> results = null;
 
-        results = storageIndex.scanRepoIndex(pattern, startIndex, pageSize);
+        results = storageIndex.scanRepoIndex(regexPattern, startIndex, pageSize);
         
-        logger.debug("Scanning file repository for pattern {} took {} seconds", pattern, (long)(System.currentTimeMillis() - startScan)/100);
+        logger.debug("Scanning file repository for pattern {} took {} seconds", regexPattern.toString(), (long)(System.currentTimeMillis() - startScan)/100);
         
         return results;
     }

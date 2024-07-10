@@ -3,6 +3,7 @@ package ro.iordache.filestorage.repository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public interface FileSystemStorageService {
     
@@ -46,11 +47,11 @@ public interface FileSystemStorageService {
     /**
      * Returns a list of file names matching a given pattern
      * 
-     * @param pattern - a {@link String} denoting the glob pattern to match
+     * @param regexPattern - a compiled {@link Pattern} representing the regex to be matched
      * @param startIndex - starting index in the result set
      * @param pageSize - max number of items per page
      * 
      * @return a {@link List} of file names matching the pattern
      */
-    public List<String> enumerate(String pattern, long startIndex, long pageSize);
+    public List<String> enumerate(Pattern regexPattern, long startIndex, long pageSize);
 }
