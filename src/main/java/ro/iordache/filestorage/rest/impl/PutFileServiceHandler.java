@@ -1,16 +1,14 @@
 package ro.iordache.filestorage.rest.impl;
 
-import java.net.URI;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import ro.iordache.filestorage.repository.FileSystemStorageService;
 import ro.iordache.filestorage.rest.FileAccessOperation;
 import ro.iordache.filestorage.rest.FileAccessRequest;
+import ro.iordache.filestorage.rest.FileAccessResult;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 
 /**
@@ -32,30 +30,27 @@ public class PutFileServiceHandler implements FileAccessServiceHandler {
      * Creates or updates a file in the file storage.
      * 
      * @param fileAccessRequest - The {@link FileAccessRequest} with details on the file to be read
-     * @return a {@link ResponseEntity} object depending on the outcome of the attempt to store the file
+     * @return a {@link FileAccessResult} object
      */
-    public ResponseEntity doAction(FileAccessRequest fileAccessRequest) {
+    public FileAccessResult doAction(FileAccessRequest fileAccessRequest) {
         logger.debug("Handling PUT request for file {}", fileAccessRequest.getFileName());
         
         try {
-            //TODO validate request
-            ResponseEntity response;
+            FileAccessResult response;
             boolean isNewFile = storageService.storeFile(fileAccessRequest.getFileName(), fileAccessRequest.getInputStream());
-            //URI destURI = URI.create(request.getRequestURI());
             
             if (isNewFile) {
-                // TODO decouple the service handler from the response building
-                response = ResponseEntity.created(new URI("/")).build();
+                response = FileAccessResult.build(FileAccessResult.CREATED);
                 logger.debug("PUT - creating new file {}", fileAccessRequest.getFileName());
             } else {
-                response = ResponseEntity.ok().build();
+                response = FileAccessResult.build(FileAccessResult.OK);
                 logger.debug("PUT - destination file {} already exists, updating it", fileAccessRequest.getFileName());
             }
             
             return response;
         } catch (Exception e) {
             logger.error("PUT - Error storing file in the file system!", e);
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return FileAccessResult.build(FileAccessResult.INTERNAL_ERROR);
         }
     }
 }

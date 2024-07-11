@@ -3,12 +3,12 @@ package ro.iordache.filestorage.rest.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import ro.iordache.filestorage.repository.FileSystemStorageService;
 import ro.iordache.filestorage.rest.FileAccessOperation;
 import ro.iordache.filestorage.rest.FileAccessRequest;
+import ro.iordache.filestorage.rest.FileAccessResult;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 
 /**
@@ -30,23 +30,21 @@ public class DeleteFileServiceHandler implements FileAccessServiceHandler {
      * Looks up the given file in the file storage. If the file is found, it will be deleted
      * 
      * @param fileAccessRequest - The {@link FileAccessRequest} object with details on the file to be deleted from the storage
-     * @return a {@link ResponseEntity} object which is either
-     *      200 OK if file deletion is successful
-     *      404 NOT FOUND if file is not present in the storage
-     *      500 INTERNAL SERVER ERROR on any other error
+     * @return a {@link FileAccessResult} object
      */
-    public ResponseEntity doAction(FileAccessRequest fileAccessRequest) {
+    public FileAccessResult doAction(FileAccessRequest fileAccessRequest) {
         logger.debug("Handling DELETE request for file {}", fileAccessRequest.getFileName());
         
         try {
             boolean deleteSuccess = storageService.deleteFile(fileAccessRequest.getFileName());
             
             if (!deleteSuccess) {
-                return ResponseEntity.notFound().build();
+                FileAccessResult.build(FileAccessResult.NOT_FOUND);
             }
-            return ResponseEntity.ok().build();
+            return FileAccessResult.build(FileAccessResult.OK);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            logger.error("Error deleting file!", e);
+            return FileAccessResult.build(FileAccessResult.INTERNAL_ERROR);
         }
         
     }

@@ -1,5 +1,6 @@
 package ro.iordache.filestorage.web.controller;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import ro.iordache.filestorage.repository.FileSystemStorageService;
 import ro.iordache.filestorage.rest.FileAccessOperation;
 import ro.iordache.filestorage.rest.FileAccessRequest;
+import ro.iordache.filestorage.rest.FileAccessResult;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 import ro.iordache.filestorage.rest.ValidationHelper;
 import ro.iordache.filestorage.rest.ValidationHelper.FileNameFormatException;
@@ -57,7 +59,32 @@ public class RestFileStorageController {
                 return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
             }
             
-            return fileServiceHandler.doAction(fileAccessRequest);
+            FileAccessResult fileAccessResult = fileServiceHandler.doAction(fileAccessRequest);
+            
+            ResponseEntity restResponse;
+            
+            switch(fileAccessResult.getType()) {
+            case FileAccessResult.CREATED:
+                restResponse = ResponseEntity.created(URI.create(request.getRequestURI())).build();
+                break;
+            case FileAccessResult.OK:
+                if (fileAccessResult.getInputStream() != null) {
+                    restResponse = ResponseEntity.ok()
+                            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                            .body(fileAccessResult.getInputStream());
+                } else {
+                    restResponse = ResponseEntity.ok().build();
+                }
+                break;
+            case FileAccessResult.NOT_FOUND:
+                restResponse = ResponseEntity.notFound().build();
+                break;
+            default:
+                restResponse = ResponseEntity.internalServerError().build();
+                break;
+            }
+            
+            return restResponse;
         } catch (FileNameFormatException fnfe) {
             return ResponseEntity.badRequest().body(fnfe.getMessage());
         } catch (Exception e) { 
