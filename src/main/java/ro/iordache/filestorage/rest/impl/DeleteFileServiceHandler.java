@@ -39,7 +39,7 @@ public class DeleteFileServiceHandler implements FileAccessServiceHandler {
             boolean deleteSuccess = storageService.deleteFile(fileAccessRequest.getFileName());
             
             if (!deleteSuccess) {
-                FileAccessResult.build(FileAccessResult.NOT_FOUND);
+                return FileAccessResult.build(FileAccessResult.NOT_FOUND);
             }
             return FileAccessResult.build(FileAccessResult.OK);
         } catch (Exception e) {
