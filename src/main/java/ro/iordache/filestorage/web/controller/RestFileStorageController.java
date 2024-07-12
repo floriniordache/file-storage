@@ -1,6 +1,7 @@
 package ro.iordache.filestorage.web.controller;
 
 import java.net.URI;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,9 @@ import ro.iordache.filestorage.rest.FileAccessServiceHandler;
 import ro.iordache.filestorage.rest.ValidationHelper;
 import ro.iordache.filestorage.rest.ValidationHelper.FileNameFormatException;
 
+/**
+ * REST API controller for the file storage server operations
+ */
 @RestController
 @RequestMapping("/api/v1/files")
 public class RestFileStorageController {
@@ -50,19 +54,32 @@ public class RestFileStorageController {
         }
     }
     
+    /**
+     * Handle a file access operation type request
+     * 
+     * @param operation - the {@link FileAccessOperation} describing the file operation type
+     * @param fileName - the file name to execute the operation on
+     * @param request - the current {@link HttpServletRequest}
+     * 
+     * @return a {@link ResponseEntity} result
+     */
     private ResponseEntity handle(FileAccessOperation operation, String fileName, HttpServletRequest request) {
         try {
+            
+            // Validate the filename against allowed formats
             FileAccessRequest fileAccessRequest = ValidationHelper.validateRequest(fileName, request);
             
+            // lookup a handler that can perform the desired operation on the file
             FileAccessServiceHandler fileServiceHandler = fileAccessOpsHandlers.get(operation);
             if (fileServiceHandler == null) {
                 return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
             }
             
+            // perform the file-related operation
             FileAccessResult fileAccessResult = fileServiceHandler.doAction(fileAccessRequest);
             
+            // build the appropriate response entity based on the result of the handler operation
             ResponseEntity restResponse;
-            
             switch(fileAccessResult.getType()) {
             case FileAccessResult.CREATED:
                 restResponse = ResponseEntity.created(URI.create(request.getRequestURI())).build();
