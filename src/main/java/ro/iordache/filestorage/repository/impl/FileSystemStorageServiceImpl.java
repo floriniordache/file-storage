@@ -47,18 +47,34 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         return size.get();
     }
 
+    /**
+     * Searches the stored file names for a given {@link Pattern}
+     * 
+     * @param regexPattern - the {@link Pattern} to match
+     * @param startIndex - starting index of the result set
+     * @param pageSize - max number of items returned
+     * @return a {@link List} of file names matching the pattern and the start/size parameters
+     * 
+     */
     public List<String> enumerate(Pattern regexPattern, long startIndex, long pageSize) {
         return scanRepo(regexPattern, startIndex, pageSize);
     }
 
-    public boolean storeFile(String fileName, InputStream contentsInputStream) {
+    /**
+     * Stores a file in the storage
+     * 
+     * @param fileName - the name of the file 
+     * @param contentsInputStream - an {@link InputStream} with the file contents
+     * 
+     * @return a boolean flag indicating if the stored file is a new file or not
+     */
+    public boolean storeFile(String fileName, InputStream contentsInputStream) throws Exception {
         Path destinationFile = storageHelper.getStorageFile(fileName);
         boolean isNew = false;
         logger.debug("Storing file {} in the internal storage", fileName);
         if (!Files.exists(destinationFile)) {
             isNew = true;
         }
-        
 
         // store a temp file with the contents
         Path tmpFile = null;
@@ -81,6 +97,9 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
                     e1.printStackTrace();
                 }
             }
+            
+            // re-throw the exception, operation was not successful
+            throw e;
         }
         
         if(isNew) {

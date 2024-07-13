@@ -22,7 +22,7 @@ public interface FileSystemStorageService {
      * @param contentsInputStream - an {@link InputStream} with the file's contents
      * @return - true if this is a new file or false otherwise
      */
-    public boolean storeFile(String fileName, InputStream contentsInputStream);
+    public boolean storeFile(String fileName, InputStream contentsInputStream) throws Exception;
     
     /**
      * Deletes a file from the server's storage
