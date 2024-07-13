@@ -1,7 +1,6 @@
 package ro.iordache.filestorage.web.controller;
 
 import java.net.URI;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +21,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.servlet.http.HttpServletRequest;
-import ro.iordache.filestorage.repository.FileSystemStorageService;
+import ro.iordache.filestorage.rest.EnumOperationResult;
+import ro.iordache.filestorage.rest.EnumServiceHandler;
 import ro.iordache.filestorage.rest.FileAccessOperation;
 import ro.iordache.filestorage.rest.FileAccessRequest;
 import ro.iordache.filestorage.rest.FileAccessResult;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
+import ro.iordache.filestorage.rest.SizeOperationResult;
 import ro.iordache.filestorage.rest.ValidationHelper;
 import ro.iordache.filestorage.rest.ValidationHelper.FileNameFormatException;
 
@@ -41,7 +45,7 @@ public class RestFileStorageController {
     private static final Logger logger = LoggerFactory.getLogger(RestFileStorageController.class);
     
     @Autowired
-    private FileSystemStorageService storageService;
+    private EnumServiceHandler enumService;
     
     private Map<FileAccessOperation, FileAccessServiceHandler> fileAccessOpsHandlers;
     
@@ -63,7 +67,7 @@ public class RestFileStorageController {
      * 
      * @return a {@link ResponseEntity} result
      */
-    private ResponseEntity handle(FileAccessOperation operation, String fileName, HttpServletRequest request) {
+    private ResponseEntity handleFileOperation(FileAccessOperation operation, String fileName, HttpServletRequest request) {
         try {
             
             // Validate the filename against allowed formats
@@ -112,38 +116,48 @@ public class RestFileStorageController {
     
     @GetMapping("/{fileNameWithExtension}")
     public ResponseEntity getFile(@PathVariable String fileNameWithExtension, HttpServletRequest request) {
-        return handle(FileAccessOperation.READ, fileNameWithExtension, request);
+        return handleFileOperation(FileAccessOperation.READ, fileNameWithExtension, request);
     }
 
     @PutMapping("/{fileNameWithExtension}")
     public ResponseEntity<String> putFile(@PathVariable String fileNameWithExtension, HttpServletRequest request) {
-        return handle(FileAccessOperation.CREATE_UPDATE, fileNameWithExtension, request);
+        return handleFileOperation(FileAccessOperation.CREATE_UPDATE, fileNameWithExtension, request);
     }
     
     @DeleteMapping("/{fileNameWithExtension}")
     public ResponseEntity deleteFile(@PathVariable String fileNameWithExtension, HttpServletRequest request) {
-        return handle(FileAccessOperation.DELETE, fileNameWithExtension, request);
+        return handleFileOperation(FileAccessOperation.DELETE, fileNameWithExtension, request);
     }
     
     @GetMapping(path="/size", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Long> getStorageSize() {
+    public ResponseEntity getStorageSize() {
+        SizeOperationResult sizeOpResult = enumService.getRepositorySize();
         
-        Map<String, Long> response = new HashMap<String, Long>();
-        response.put("numFiles", storageService.getSize());
-        
-        return response;
+        return buildJSONResponse(sizeOpResult);
     }
     
     @GetMapping(path="/enum/{regex}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getEnum(@PathVariable String regex, 
-            @RequestParam(defaultValue = "0") long startIndex, @RequestParam(defaultValue="1000") long pageSize) {
+            @RequestParam(defaultValue = "0") long startIndex, @RequestParam(defaultValue="1000") int pageSize) {
         try {
             Pattern regexPattern = Pattern.compile(regex);
             
-            return ResponseEntity.ok(storageService.enumerate(regexPattern, startIndex, pageSize));
+            EnumOperationResult enumOpResult = enumService.enumerate(regexPattern, startIndex, pageSize);
+            
+            return buildJSONResponse(enumOpResult);
         } catch (PatternSyntaxException pse) {
+            logger.debug("Invalid regular expression pattern {}", regex, pse);
             return ResponseEntity.badRequest().body("Invalid regular expression pattern!");
         }
 
+    }
+    
+    private ResponseEntity buildJSONResponse(Object result) {
+        try {
+            ObjectMapper objMapper = new ObjectMapper();
+            return ResponseEntity.ok(objMapper.writeValueAsString(result));
+        } catch (JsonProcessingException jspe) {
+            return ResponseEntity.internalServerError().body("Error serializing to JSON!");
+        }
     }
 }
