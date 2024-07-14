@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -74,9 +76,27 @@ public class FileSystemStorageServiceImplTest {
         
         Assert.assertEquals("Index should contain two new entries!", currentSize + FILES_COUNT, newIndexedSize);
     }
+
+    @Test
+    public void testStoreFileError() throws Exception {
+        String fileName = "testError.file";
+        boolean exceptionThrown = false;
+        try {
+            fileStorageService.storeFile("testError.file", null);
+        } catch (Exception e) {
+            exceptionThrown = true;
+        }
+
+        Assert.assertTrue("No exception thrown on store file error!", exceptionThrown);
+        
+        // check null response from getting file content
+        InputStream fileIS = fileStorageService.getFileContent(fileName);
+        
+        Assert.assertNull("InputStream for non-existing file should be null!", fileIS);
+    }
     
     @Test
-    public void testStoreFiles() throws Exception {
+    public void testStoreRetrieveDelete() throws Exception {
         long initialSize = fileStorageService.getSize();
         // create a bunch of new files
         Map<String, String> addedFiles = new HashMap<String, String>();
@@ -98,7 +118,6 @@ public class FileSystemStorageServiceImplTest {
         Assert.assertEquals("Invalid storage size count!", initialSize + FILES_COUNT, fileStorageService.getSize());
         
         // retrieve the files and check their contents
-        
         for (String newFileName : addedFiles.keySet()) {
             InputStream fileContents = fileStorageService.getFileContent(newFileName);
             
@@ -118,8 +137,54 @@ public class FileSystemStorageServiceImplTest {
         
         // try out the enumerate functionality and check that all files are returned
         List<String> allEnumFiles = fileStorageService.enumerate(Pattern.compile(".*"), 0, 1000);
-        
         Assert.assertTrue("Should contain all created files!", allEnumFiles.containsAll(createdFileList));
+        
+        // randomly delete half of the newly created files
+        int deleted = 0;
+        List<String> removedFiles = new ArrayList<String>();
+        for (String fileNameToDelete : addedFiles.keySet()) {
+            boolean deleteSuccess = false;
+            try {
+                deleteSuccess = fileStorageService.deleteFile(fileNameToDelete);
+            } catch (Exception e) {}
+            
+            if (deleteSuccess) {
+                deleted++;
+                removedFiles.add(fileNameToDelete);
+                
+                if (deleted >= addedFiles.size()) {
+                    break;
+                }
+            }
+        }
+        
+        // enumerate again
+        allEnumFiles = fileStorageService.enumerate(Pattern.compile(".*"), 0, 1000);
+        Assert.assertTrue("Enumeration still contains removed files after 5 invocations!", 
+                verifyEnumDisjointedWithDelay(5, 100, removedFiles));
+    }
+    
+    private boolean verifyEnumDisjointedWithDelay(int maxInvocations, long delayBetweenCalls, List<String> listFiles) {
+        List<String> enumResult;
+        int invocationCount = 0;
+        
+        while (invocationCount < maxInvocations) {
+            enumResult = fileStorageService.enumerate(Pattern.compile(".*"), 0, 1000);
+            
+            if (Collections.disjoint(enumResult, listFiles)) {
+                return true;
+            }
+            
+            try {
+                Thread.sleep(delayBetweenCalls);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            
+            invocationCount++;
+        }
+        
+        return false;
     }
     
     private List<String> createEmptyFiles(int count) throws IOException {
@@ -129,9 +194,7 @@ public class FileSystemStorageServiceImplTest {
             String fileName = String.valueOf(System.nanoTime() + ".file");
             Path filePath = storageHelper.getStorageFile(fileName);
             Files.createFile(filePath);
-            
-            System.out.println(fileName);
-            
+
             fileList.add(fileName);
         }
         
