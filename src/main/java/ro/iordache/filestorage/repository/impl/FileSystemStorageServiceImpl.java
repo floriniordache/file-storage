@@ -2,10 +2,12 @@ package ro.iordache.filestorage.repository.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
@@ -25,7 +27,11 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(FileSystemStorageServiceImpl.class);
     
+    // atomic long keeping track of the storage size
     private AtomicLong size;
+    
+    // map used to sync certain file operations 
+    private ConcurrentHashMap<String, WeakReference<Object>> fileLocks;
     
     @Autowired
     private FileSystemStorageHelperImpl storageHelper;
@@ -35,6 +41,8 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
     
     public FileSystemStorageServiceImpl() {
         size = new AtomicLong();
+        
+        fileLocks = new ConcurrentHashMap<String, WeakReference<Object>>();
     }
     
     @PostConstruct
@@ -72,20 +80,33 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         Path destinationFile = storageHelper.getStorageFile(fileName);
         boolean isNew = false;
         logger.debug("Storing file {} in the internal storage", fileName);
-        if (!Files.exists(destinationFile)) {
-            isNew = true;
-        }
 
-        // store a temp file with the contents
         Path tmpFile = null;
         try {
+            // store the contents in a temporary file
             tmpFile = Files.createTempFile(storageHelper.getTempStoragePath(), null, ".tmp");
             
             FileCopyUtils.copy(contentsInputStream, 
                     Files.newOutputStream(tmpFile));
             
-            //atomically move the temporary file at it's right location in the storage
-            Files.move(tmpFile, destinationFile, StandardCopyOption.ATOMIC_MOVE);
+            // lock operation for this particular file
+            Object fileLock = getOrCreateFileLock(fileName);
+            synchronized(fileLock) {
+                if (!Files.exists(destinationFile)) {
+                    isNew = true;
+                }
+                //atomically move the temporary file at it's right location in the storage
+                Files.move(tmpFile, destinationFile, StandardCopyOption.ATOMIC_MOVE);
+                
+                if(isNew) {
+                    // increment repo size
+                    size.incrementAndGet();
+                    
+                    // update index, add new file
+                    storageIndex.addToIndex(fileName);
+                }
+            }
+            
         } catch (Exception e) {
             logger.error("Something went wrong while transferring the content input stream to destination file!", e);
             
@@ -102,14 +123,6 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
             throw e;
         }
         
-        if(isNew) {
-            // increment repo size
-            size.incrementAndGet();
-            
-            // update index, add new file
-            storageIndex.addToIndex(fileName);
-        }
-        
         return isNew;
     }
     
@@ -122,13 +135,17 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
             return false;
         }
         
-        Files.delete(resolvedFileToDelete);
+        // lock operation for this particular file
+        Object fileLock = getOrCreateFileLock(fileName);
+        synchronized(fileLock) {
+            Files.delete(resolvedFileToDelete);
+            
+            // update the store size and index
+            size.decrementAndGet();
+            storageIndex.removeFromIndex(fileName);
+        }
         
         logger.debug("[DELETE] Deleting {} successful", fileName);
-        
-        // update the store size and index
-        size.decrementAndGet();
-        storageIndex.removeFromIndex(fileName);
         return true;
     }
     
@@ -142,6 +159,28 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         }
         
         return Files.newInputStream(resolvedFileToRead);
+    }
+    
+    /**
+     * Gets or creates an object to be used to synchronize operations on a file
+     * 
+     * @param fileName the file name
+     * @return an {@link Object} to be used in synchronizing operations on the given file name
+     */
+    private synchronized Object getOrCreateFileLock(String fileName) {
+        WeakReference<Object> fileLockReference = fileLocks.get(fileName);
+        Object fileLock = null;
+        
+        if (fileLockReference != null) {
+            fileLock = fileLockReference.get();
+        }
+        
+        if (fileLock == null) {
+            fileLock = new Object();
+            fileLocks.put(fileName, new WeakReference<Object>(fileLock));
+        }
+        
+        return fileLock;
     }
     
     private List<String> scanRepo(Pattern regexPattern, long startIndex, long pageSize) {
