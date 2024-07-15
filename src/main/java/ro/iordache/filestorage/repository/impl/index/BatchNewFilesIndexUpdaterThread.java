@@ -65,13 +65,13 @@ public class BatchNewFilesIndexUpdaterThread extends Thread {
                                 // update file channel position
                                 indexFileChannel.position(updatePosition);
                                 
-                                // overwrite the area for the filename that needs to be removed
-                                ByteBuffer whiteSpaces = ByteBuffer.wrap(new FileInfoIndexEntry(fileName).getBytes());
+                                // overwrite the empty area with the name that needs to be added
+                                ByteBuffer whiteSpaces = ByteBuffer.wrap(new FileInfoIndexEntry(fileToAdd).getBytes());
                                 indexFileChannel.write(whiteSpaces);
                                 
                                 indexFileChannel.position(currentFileCursorPos);
                                 
-                                logger.trace("Adding file {} to index done!", fileName);
+                                logger.trace("Adding file {} to index done!", fileToAdd);
                                 allNewFiles.remove(0);
                                 
                                 if (allNewFiles.size() == 0) {
