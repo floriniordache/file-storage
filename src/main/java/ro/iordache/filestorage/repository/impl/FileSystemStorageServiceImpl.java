@@ -23,6 +23,9 @@ import ro.iordache.filestorage.repository.FileSystemStorageService;
 import ro.iordache.filestorage.repository.impl.index.StorageIndex;
 import ro.iordache.filestorage.repository.util.FileSystemStorageHelperImpl;
 
+/**
+ * File system storage operations service implementation
+ */
 @Service
 public class FileSystemStorageServiceImpl implements FileSystemStorageService {
 
@@ -66,7 +69,15 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
      * 
      */
     public List<String> enumerate(Pattern regexPattern, long startIndex, long pageSize) {
-        return scanRepo(regexPattern, startIndex, pageSize);
+        logger.debug("Scanning file repository for pattern {}", regexPattern.toString());
+        long startScan = System.currentTimeMillis();
+        List<String> results = null;
+
+        results = storageIndex.scanRepoIndex(regexPattern, startIndex, pageSize);
+        
+        logger.debug("Scanning file repository for pattern {} took {} seconds", regexPattern.toString(), (float)(System.currentTimeMillis() - startScan)/1000);
+        
+        return results;
     }
 
     /**
@@ -195,17 +206,5 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         }
         
         return fileLock;
-    }
-    
-    private List<String> scanRepo(Pattern regexPattern, long startIndex, long pageSize) {
-        logger.debug("Scanning file repository for pattern {}", regexPattern.toString());
-        long startScan = System.currentTimeMillis();
-        List<String> results = null;
-
-        results = storageIndex.scanRepoIndex(regexPattern, startIndex, pageSize);
-        
-        logger.debug("Scanning file repository for pattern {} took {} seconds", regexPattern.toString(), (float)(System.currentTimeMillis() - startScan)/1000);
-        
-        return results;
     }
 }

@@ -8,9 +8,12 @@ import java.nio.file.Paths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+/**
+ * Helper for File and Folder operations
+ */
+@Component
 public class FileSystemStorageHelperImpl {
     
     private static final Logger logger = LoggerFactory.getLogger(FileSystemStorageHelperImpl.class);
@@ -40,10 +43,18 @@ public class FileSystemStorageHelperImpl {
         }
     }
     
+    /**
+     * Gets the file storage {@link Path} for this file storage service
+     * @return the main storage {@link Path}
+     */
     public Path getStoragePath() {
         return Paths.get(storageRepositoryFolder);
     }
     
+    /**
+     * Gets the temporary folder {@link Path}
+     * @return the temporary folder {@link Path}
+     */
     public Path getTempStoragePath() {
         return Paths.get(tempFolderName);
     }

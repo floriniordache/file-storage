@@ -5,6 +5,9 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * File system storage operations service
+ */
 public interface FileSystemStorageService {
     
     /**

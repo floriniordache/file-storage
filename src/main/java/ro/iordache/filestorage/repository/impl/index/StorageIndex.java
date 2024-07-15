@@ -50,6 +50,12 @@ public class StorageIndex {
         (new BatchDeletedFilesIndexUpdaterThread(deletedFilesBlockingQueue, STORAGE_INDEX_FILE_NAME)).start();
     }
     
+    /**
+     * Scans all files in the storage folder and adds the names to the index file for quicker scanning
+     * 
+     * @param folder - the folder to scan
+     * @return - number of found file entries
+     */
     public long buildIndex(Path folder) {
         logger.debug("Building storage index file");
         long startIndexBuild = System.currentTimeMillis();
@@ -105,6 +111,15 @@ public class StorageIndex {
         newFilesBlockingQueue.add(fileName);
     }
     
+    /**
+     * Scans the index file and looks up a given regex {@link Pattern}
+     * Results will be paged by leveraging a start index and a page size to avoid returning a large result set
+     * 
+     * @param regexPattern the regex {@link Pattern}
+     * @param startIdx - starting index of the result set
+     * @param pageSize - max number of items in the result set
+     * @return - a {@link List} with matching entries
+     */
     public List<String> scanRepoIndex(Pattern regexPattern, long startIdx, long pageSize) {
         List<String> hits = new ArrayList<String>();
         FileChannel indexFileChannel = null;

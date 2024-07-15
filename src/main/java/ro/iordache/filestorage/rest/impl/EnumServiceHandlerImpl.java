@@ -14,6 +14,9 @@ import ro.iordache.filestorage.rest.EnumServiceHandler;
 import ro.iordache.filestorage.rest.RESTApiResult;
 import ro.iordache.filestorage.rest.SizeOperationResult;
 
+/**
+ * Repository size and enumeration service implementation
+ */
 @Service
 public class EnumServiceHandlerImpl implements EnumServiceHandler {
     
