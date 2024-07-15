@@ -48,6 +48,8 @@ public class RestFileStorageController {
     
     private static final Logger logger = LoggerFactory.getLogger(RestFileStorageController.class);
     
+    private static final int MAX_PAGE_SIZE = 1000;
+    
     @Autowired
     private EnumServiceHandler enumService;
     
@@ -152,6 +154,14 @@ public class RestFileStorageController {
             @RequestParam(defaultValue = "0") long startIndex, @RequestParam(defaultValue="1000") int pageSize) {
         try {
             Pattern regexPattern = Pattern.compile(regex);
+            
+            if (startIndex < 0) {
+                startIndex = 0;
+            }
+            
+            if (pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+                pageSize = MAX_PAGE_SIZE;
+            }
             
             EnumOperationResult enumOpResult = enumService.enumerate(regexPattern, startIndex, pageSize);
             

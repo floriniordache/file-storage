@@ -70,4 +70,13 @@ Example response:
 }
 <pre>
 
-## Implementation details
+## Summary details
+
+- Server will store files in the filesystem under the {filestorage.repo.folder} (default="storage") folder.
+- File operation APIs will use mostly the file system to create/update/delete the files
+- All incoming file PUTs are stored as temporary files (app will auto create a "temp" folder if not already present). Once the file contents have been successfully saved to temp folder, the resulting file will be moved atomically (if possible) at it's final destination
+- Storage size is cached in memory
+- Enumeration operation does not do direct disk traversal to find matches, but rather uses an internal file-based index.
+    - Index is automatically built on app startup via storage traversal
+    - All modifying operations (PUT, DELETE) are write-through, in the sense that, for successful operations, the index will also be updated with the newly added (or removed file).
+    - Index updates are applied asynchronously (using separate threads for added/deleted file names), hence the enum operation would be slightly inconsistent until the index updates are committed
