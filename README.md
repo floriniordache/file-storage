@@ -47,7 +47,7 @@ Example response:
 {
     "filesCount": 1645
 }
-<pre>
+</pre>
 
 **GET /api/v1/files/enum/{regex}?startIndex={start}&pageSize={maxResults}**
 
@@ -68,7 +68,7 @@ Example response:
     "file5.txt"
     ]
 }
-<pre>
+</pre>
 
 ## Summary details
 
