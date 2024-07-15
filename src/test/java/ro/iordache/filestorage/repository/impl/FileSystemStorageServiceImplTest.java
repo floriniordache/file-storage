@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -138,7 +139,7 @@ public class FileSystemStorageServiceImplTest {
         List<String> allEnumFiles = fileStorageService.enumerate(Pattern.compile(".*"), 0, 1000);
         Assert.assertTrue("Should contain all created files!", allEnumFiles.containsAll(createdFileList));
         
-        // randomly delete half of the newly created files
+        // delete the newly added files
         int deleted = 0;
         List<String> removedFiles = new ArrayList<String>();
         for (String fileNameToDelete : addedFiles.keySet()) {
@@ -163,6 +164,27 @@ public class FileSystemStorageServiceImplTest {
                 verifyEnumDisjointedWithDelay(5, 100, removedFiles));
     }
     
+    @Test
+    public void testStoreDeleteStore() throws Exception {
+        // create some files
+        List<String> originalEmptyFiles = storeCreateEmptyFiles(FILES_COUNT);
+        
+        // delete them
+        for (String fileName : originalEmptyFiles) {
+            try {
+                fileStorageService.deleteFile(fileName);
+            } catch (Exception e) {}
+        }
+        
+        // create some more
+        List<String> otherEmptyFiles = storeCreateEmptyFiles(FILES_COUNT);
+        
+        // enumerate, should only find the last created ones
+        List<String> allEnumFiles = fileStorageService.enumerate(Pattern.compile(".*"), 0, 1000);
+        Assert.assertTrue("Enumeration still contains removed files after 5 invocations!", 
+                verifyEnumDisjointedWithDelay(5, 100, originalEmptyFiles));
+    }
+    
     private boolean verifyEnumDisjointedWithDelay(int maxInvocations, long delayBetweenCalls, List<String> listFiles) {
         List<String> enumResult;
         int invocationCount = 0;
@@ -184,6 +206,29 @@ public class FileSystemStorageServiceImplTest {
         }
         
         return false;
+    }
+    
+    /**
+     * Creates some empty files via the file storage service.storeFile call
+     * @param count
+     * @return a {@link List} of newly created files
+     * @throws Exception
+     */
+    private List<String> storeCreateEmptyFiles(int count) throws Exception {
+        // create a bunch of new files
+        List<String> addedFiles = new ArrayList<String>();
+        for (int i = 0 ; i < count ; i++) {
+            String fileName = String.valueOf(System.nanoTime() + ".file");
+            
+            InputStream contentsStream = new ByteArrayInputStream("".getBytes(StandardCharsets.UTF_8));
+            
+            // store the files
+            fileStorageService.storeFile(fileName, contentsStream);
+            
+            createdFileList.add(fileName);
+        }
+        
+        return addedFiles;
     }
     
     private List<String> createEmptyFiles(int count) throws IOException {

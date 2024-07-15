@@ -66,6 +66,27 @@ public class ReadFileServiceHandlerTest {
     }
     
     @Test
+    public void testHandlerResultCached() {
+        try {
+            String mockFileName = "mockfile.txt";
+            FileAccessRequest accessRequest = Mockito.mock(FileAccessRequest.class);
+            InputStream mockFileInputStream = Mockito.mock(InputStream.class);
+            
+            Mockito.when(accessRequest.getFileName()).thenReturn(mockFileName);
+            Mockito.when(accessRequest.checkNotModified(Mockito.anyLong())).thenReturn(true);
+            Mockito.when(storageService.getFileContent(mockFileName)).thenReturn(mockFileInputStream);
+            Mockito.when(storageService.getFileLastModified(mockFileName)).thenReturn(System.currentTimeMillis());
+            
+            FileAccessResult result = readHandler.doAction(accessRequest);
+            
+            Assert.assertEquals("Result should be success",FileAccessResult.NOT_MODIFIED, result.getType());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail("Exception thrown, test failed!");
+        }
+    }
+    
+    @Test
     public void testHandlerResultException() {
         try {
             String mockFileName = "mockfile.txt";

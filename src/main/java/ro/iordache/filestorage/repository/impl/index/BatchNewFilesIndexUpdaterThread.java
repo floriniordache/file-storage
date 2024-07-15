@@ -87,6 +87,9 @@ public class BatchNewFilesIndexUpdaterThread extends Thread {
                     
                     // check if there are more files to add, they need to be appended
                     if (allNewFiles.size() > 0) {
+                        // make sure we're at the end
+                        indexFileChannel.position(indexFileChannel.size());
+                        
                         ByteBuffer buf = ByteBuffer.allocate(allNewFiles.size() * FileInfoIndexEntry.MAX_RECORD_LENGTH);
                         for (String newFileName : allNewFiles) {
                             FileInfoIndexEntry indexEntry = new FileInfoIndexEntry(newFileName);
