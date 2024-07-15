@@ -1,6 +1,7 @@
 package ro.iordache.filestorage.web.controller;
 
 import java.net.URI;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseEntity.BodyBuilder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +43,8 @@ import ro.iordache.filestorage.rest.ValidationHelper.FileNameFormatException;
 @RestController
 @RequestMapping("/api/v1/files")
 public class RestFileStorageController {
+    
+    private static final SimpleDateFormat MODIFIED_DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy KK:mm:ss a Z");
     
     private static final Logger logger = LoggerFactory.getLogger(RestFileStorageController.class);
     
@@ -90,15 +94,22 @@ public class RestFileStorageController {
                 break;
             case FileAccessResult.OK:
                 if (fileAccessResult.getInputStream() != null) {
-                    restResponse = ResponseEntity.ok()
-                            .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                            .body(fileAccessResult.getInputStream());
+                    
+                    BodyBuilder responseBuilder = ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM);
+                    if (fileAccessResult.getLastModified() > 0) {
+                        responseBuilder.lastModified(fileAccessResult.getLastModified());
+                    }
+                    restResponse = responseBuilder.body(fileAccessResult.getInputStream());
+
                 } else {
                     restResponse = ResponseEntity.ok().build();
                 }
                 break;
             case FileAccessResult.NOT_FOUND:
                 restResponse = ResponseEntity.notFound().build();
+                break;
+            case FileAccessResult.NOT_MODIFIED:
+                restResponse = ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
                 break;
             default:
                 restResponse = ResponseEntity.internalServerError().build();

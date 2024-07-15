@@ -35,6 +35,15 @@ public interface FileSystemStorageService {
     
 
     /**
+     * Gets a file's last modified millis
+     * 
+     * @param fileName - the file name
+     * @return the file's last modified date in millis if the file exists, -1 otherwise;
+     * @throws IOException
+     */
+    public long getFileLastModified(String fileName) throws IOException;
+    
+    /**
      * Returns a stored file's contents as an {@link InputStream}
      * 
      * @param fileName - the file name

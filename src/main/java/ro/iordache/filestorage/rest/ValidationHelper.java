@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.http.HttpHeaders;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
@@ -24,7 +26,9 @@ public class ValidationHelper {
         if (!filenameMatcher.matches()) {
             throw new FileNameFormatException();
         }
+
+        long lastModifiedFromRequest = httpRequest.getDateHeader(HttpHeaders.IF_MODIFIED_SINCE);
         
-        return new FileAccessRequest(fileName, httpRequest.getInputStream());
+        return new FileAccessRequest(fileName, httpRequest.getInputStream(), lastModifiedFromRequest);
     }
 }

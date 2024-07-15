@@ -6,6 +6,7 @@ import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -14,7 +15,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
 
 import jakarta.annotation.PostConstruct;
@@ -22,7 +23,7 @@ import ro.iordache.filestorage.repository.FileSystemStorageService;
 import ro.iordache.filestorage.repository.impl.index.StorageIndex;
 import ro.iordache.filestorage.repository.util.FileSystemStorageHelperImpl;
 
-@Component
+@Service
 public class FileSystemStorageServiceImpl implements FileSystemStorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(FileSystemStorageServiceImpl.class);
@@ -75,6 +76,7 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
      * @param contentsInputStream - an {@link InputStream} with the file contents
      * 
      * @return a boolean flag indicating if the stored file is a new file or not
+     * @throws method will re-throw any exception that occurs while attempting to store the file
      */
     public boolean storeFile(String fileName, InputStream contentsInputStream) throws Exception {
         Path destinationFile = storageHelper.getStorageFile(fileName);
@@ -161,6 +163,18 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
         return Files.newInputStream(resolvedFileToRead);
     }
     
+
+    public long getFileLastModified(String fileName) throws IOException {
+        long lastModified = -1;
+        Path file = storageHelper.findFile(fileName);
+        if (file != null) {
+            BasicFileAttributes attr = Files.readAttributes(file, BasicFileAttributes.class);
+            lastModified = attr.lastModifiedTime().toMillis();
+        }
+        
+        return lastModified;
+    }
+    
     /**
      * Gets or creates an object to be used to synchronize operations on a file
      * 
@@ -190,7 +204,7 @@ public class FileSystemStorageServiceImpl implements FileSystemStorageService {
 
         results = storageIndex.scanRepoIndex(regexPattern, startIndex, pageSize);
         
-        logger.debug("Scanning file repository for pattern {} took {} seconds", regexPattern.toString(), (long)(System.currentTimeMillis() - startScan)/100);
+        logger.debug("Scanning file repository for pattern {} took {} seconds", regexPattern.toString(), (float)(System.currentTimeMillis() - startScan)/1000);
         
         return results;
     }

@@ -11,6 +11,7 @@ public abstract class RESTApiResult {
     public static final int NOT_FOUND = 1;
     public static final int CREATED = 2;
     public static final int INTERNAL_ERROR = 3;
+    public static final int NOT_MODIFIED = 4;
     
     // type of this result
     @JsonIgnore

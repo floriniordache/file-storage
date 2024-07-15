@@ -43,9 +43,17 @@ public class ReadFileServiceHandler implements FileAccessServiceHandler {
             if (foundFileIS == null) {
                 return FileAccessResult.build(FileAccessResult.NOT_FOUND);
             }
+
+            long fileLastModified = storageService.getFileLastModified(fileAccessRequest.getFileName());
+            if (fileAccessRequest.checkNotModified(fileLastModified)) {
+                // file not modified in the meantime
+                return FileAccessResult.build(FileAccessResult.NOT_MODIFIED, null, -1);
+            }
+
             
             InputStreamResource fileISResource = new InputStreamResource(foundFileIS);
-            return FileAccessResult.build(FileAccessResult.OK, fileISResource);
+            logger.debug("File last modified: {}", fileLastModified);
+            return FileAccessResult.build(FileAccessResult.OK, fileISResource, fileLastModified);
         } catch (Exception e) {
             logger.error("Error reading file from the internal storage!", e);
             return FileAccessResult.build(FileAccessResult.INTERNAL_ERROR);

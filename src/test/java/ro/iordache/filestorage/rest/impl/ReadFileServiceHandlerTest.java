@@ -12,6 +12,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import ro.iordache.filestorage.repository.FileSystemStorageService;
+import ro.iordache.filestorage.repository.util.FileSystemStorageHelperImpl;
 import ro.iordache.filestorage.rest.FileAccessOperation;
 import ro.iordache.filestorage.rest.FileAccessRequest;
 import ro.iordache.filestorage.rest.FileAccessResult;
@@ -24,6 +25,9 @@ public class ReadFileServiceHandlerTest {
 
     @MockBean
     private FileSystemStorageService storageService;
+    
+    @SpyBean
+    private FileSystemStorageHelperImpl fileHelper;
     
     @SpyBean
     private ReadFileServiceHandler readHandler;
