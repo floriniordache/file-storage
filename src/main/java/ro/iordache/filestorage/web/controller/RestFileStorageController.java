@@ -131,7 +131,7 @@ public class RestFileStorageController {
     }
 
     @PutMapping("/{fileNameWithExtension}")
-    public ResponseEntity<String> putFile(@PathVariable String fileNameWithExtension, HttpServletRequest request) {
+    public ResponseEntity putFile(@PathVariable String fileNameWithExtension, HttpServletRequest request) {
         return handleFileOperation(FileAccessOperation.CREATE_UPDATE, fileNameWithExtension, request);
     }
     
