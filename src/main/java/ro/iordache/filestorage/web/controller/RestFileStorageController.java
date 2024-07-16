@@ -33,9 +33,9 @@ import ro.iordache.filestorage.rest.FileAccessOperation;
 import ro.iordache.filestorage.rest.FileAccessRequest;
 import ro.iordache.filestorage.rest.FileAccessResult;
 import ro.iordache.filestorage.rest.FileAccessServiceHandler;
+import ro.iordache.filestorage.rest.FileRequestValidationHelper;
+import ro.iordache.filestorage.rest.FileRequestValidationHelper.FileNameFormatException;
 import ro.iordache.filestorage.rest.SizeOperationResult;
-import ro.iordache.filestorage.rest.ValidationHelper;
-import ro.iordache.filestorage.rest.ValidationHelper.FileNameFormatException;
 
 /**
  * REST API controller for the file storage server operations
@@ -77,7 +77,7 @@ public class RestFileStorageController {
         try {
             
             // Validate the filename against allowed formats
-            FileAccessRequest fileAccessRequest = ValidationHelper.validateRequest(fileName, request);
+            FileAccessRequest fileAccessRequest = FileRequestValidationHelper.validateRequest(fileName, request);
             
             // lookup a handler that can perform the desired operation on the file
             FileAccessServiceHandler fileServiceHandler = fileAccessOpsHandlers.get(operation);

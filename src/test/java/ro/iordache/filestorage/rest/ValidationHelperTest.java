@@ -8,10 +8,10 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import jakarta.servlet.http.HttpServletRequest;
-import ro.iordache.filestorage.rest.ValidationHelper.FileNameFormatException;
+import ro.iordache.filestorage.rest.FileRequestValidationHelper.FileNameFormatException;
 
 /**
- * Tests the {@link ValidationHelper} class
+ * Tests the {@link FileRequestValidationHelper} class
  */
 @RunWith(MockitoJUnitRunner.class)
 public class ValidationHelperTest {
@@ -33,7 +33,7 @@ public class ValidationHelperTest {
     
     private void testValidFilenameFormat(String fileName) {
         try {
-            FileAccessRequest result = ValidationHelper.validateRequest(fileName, mockRequest);
+            FileAccessRequest result = FileRequestValidationHelper.validateRequest(fileName, mockRequest);
             Assert.assertEquals("Filename should be allowed!", result.getFileName(), fileName);
         } catch (Exception e) {
             e.printStackTrace();
@@ -44,7 +44,7 @@ public class ValidationHelperTest {
     private void testInvalidFilenameFormat(String fileName) {
         boolean exceptionThrown = false;
         try {
-            ValidationHelper.validateRequest(fileName, mockRequest);
+            FileRequestValidationHelper.validateRequest(fileName, mockRequest);
             Assert.fail("Filename should not be allowed!");
             
         } catch (FileNameFormatException fnfe) {

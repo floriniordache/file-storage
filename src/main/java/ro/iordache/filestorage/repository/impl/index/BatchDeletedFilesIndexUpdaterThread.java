@@ -44,6 +44,7 @@ public class BatchDeletedFilesIndexUpdaterThread extends Thread {
                 FileChannel indexFileChannel = FileChannel.open(Paths.get(indexFileName), 
                         StandardOpenOption.READ, StandardOpenOption.WRITE);
 
+                // do reads in 5k record chunks
                 ByteBuffer buffer = ByteBuffer.allocate(5000 * FileInfoIndexEntry.MAX_RECORD_LENGTH);
                 long readBytes;
                 
@@ -78,6 +79,7 @@ public class BatchDeletedFilesIndexUpdaterThread extends Thread {
                             ByteBuffer whiteSpaces = ByteBuffer.wrap(new FileInfoIndexEntry("").getBytes());
                             indexFileChannel.write(whiteSpaces);
                             
+                            // update position to initial value
                             indexFileChannel.position(currentFileCursorPos);
                             
                             // remove the deleted file from the array

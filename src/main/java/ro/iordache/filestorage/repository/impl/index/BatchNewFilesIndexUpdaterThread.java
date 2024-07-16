@@ -69,6 +69,7 @@ public class BatchNewFilesIndexUpdaterThread extends Thread {
                                 ByteBuffer whiteSpaces = ByteBuffer.wrap(new FileInfoIndexEntry(fileToAdd).getBytes());
                                 indexFileChannel.write(whiteSpaces);
                                 
+                                // update position to initial value
                                 indexFileChannel.position(currentFileCursorPos);
                                 
                                 logger.trace("Adding file {} to index done!", fileToAdd);

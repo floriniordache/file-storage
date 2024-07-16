@@ -26,6 +26,7 @@ public class FileInfoIndexEntry {
         StringBuilder sb = new StringBuilder();
         sb.append(fileName);
         
+        // pad with empty spaces so byte representation is exactly MAX_RECORD_LENGTH
         while (sb.length() < MAX_RECORD_LENGTH) {
             sb.append(" ");
         }
@@ -46,6 +47,12 @@ public class FileInfoIndexEntry {
         return this.bytes;
     }
 
+    /**
+     * Build a list of {@link FileInfoIndexEntry} out of a byte buffer
+     * 
+     * @param byteBuf - the {@link ByteBuffer}
+     * @return a {@link List} of {@link FileInfoIndexEntry} items
+     */
     public static List<FileInfoIndexEntry> fromByteArray(ByteBuffer byteBuf) {
         
         List<FileInfoIndexEntry> resList = new ArrayList<FileInfoIndexEntry>();
