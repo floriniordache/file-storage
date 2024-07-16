@@ -61,10 +61,13 @@ public class StorageIndex {
         long startIndexBuild = System.currentTimeMillis();
         long numEntries = 0;
         
+        DirectoryStream<Path> ds = null;
+        FileChannel indexFileChannel = null;
+        
         try {
-            DirectoryStream<Path> ds = Files.newDirectoryStream(folder);
+            ds = Files.newDirectoryStream(folder);
             
-            FileChannel indexFileChannel = FileChannel.open(Paths.get(STORAGE_INDEX_FILE_NAME), 
+            indexFileChannel = FileChannel.open(Paths.get(STORAGE_INDEX_FILE_NAME), 
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
             ByteBuffer buf = ByteBuffer.allocate(10000 * FileInfoIndexEntry.MAX_RECORD_LENGTH);
             
@@ -95,6 +98,18 @@ public class StorageIndex {
             indexFileChannel.close();
         } catch (IOException e) {
             logger.error("Error indexing repository storage!", e);
+        } finally {
+            if (ds != null) {
+                try {
+                    ds.close();
+                } catch (IOException e) {}
+            }
+            
+            if (indexFileChannel != null && indexFileChannel.isOpen()) {
+                try {
+                    indexFileChannel.close();
+                } catch (IOException e) {}
+            }
         }
         
         logger.debug("Building storage index file done in {} seconds!", (float)(System.currentTimeMillis() - startIndexBuild)/1000);
