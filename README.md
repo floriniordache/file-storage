@@ -36,6 +36,8 @@ Response types:
 - 200 OK - File was successfully deleted from the storage
 - 404 NOT_FOUND - Given file {fileName} was not found in this storage
 
+**Important**: Implementation assumes the Unix behavior on deleting files with current open file handles where the file is unlinked (thus inaccessible through the filesystem) but its data still available to any pre-existing open file handles, the actual data deletion happening when there are no other open handles to the file. This behavior is essential for a DELETE operation concurrent with multiple GETs.
+
 ### Enum operations
 
 **GET /api/v1/files/size**
